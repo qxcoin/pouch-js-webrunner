@@ -1,4 +1,4 @@
-import 'dotenv/config'
+import 'dotenv/config';
 import express from "express";
 import { port } from "@App/config.js";
 import w from "@App/wallet.js";

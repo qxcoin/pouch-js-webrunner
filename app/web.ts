@@ -1,14 +1,20 @@
-import 'dotenv/config';
-import express from "express";
-import { port } from "@App/config.js";
-import w from "@App/wallet.js";
+import Fastify from 'fastify';
+import { TypeBoxTypeProvider } from '@fastify/type-provider-typebox';
+import { AddressService } from "@services/address.services";
+import {
+  Schema as AddressRetrievalSchema,
+  SchemaType as AddressRetrievalSchemaType,
+} from '@schemas/address-retrieval';
 
-const app = express();
+const fastify = Fastify({ logger: true }).withTypeProvider<TypeBoxTypeProvider>();
 
-app.get('/', async (req, res) => {
-  res.send(await w.createBitcoinWallet().getAddress(0, 0));
-});
+fastify.get<AddressRetrievalSchemaType>(
+  '/addresses/:walletType/:accountIndex/:index',
+  { schema: AddressRetrievalSchema },
+  async (req, reply) => {
+    const address = await AddressService.createAddress(req.params.walletType, req.params.index, req.params.accountIndex);
+    return reply.send(address.hash);
+  }
+);
 
-app.listen(port, () => {
-  console.log(`App listening on port ${port}`);
-});
+export default fastify;

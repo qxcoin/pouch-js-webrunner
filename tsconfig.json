@@ -2,7 +2,9 @@
   "include": ["app/**/*.ts"],
   "exclude": ["node_modules/**"],
   "compilerOptions": {
-    "target": "es2020",
+    "target": "es2022",
+    "experimentalDecorators": true,
+    "emitDecoratorMetadata": true,
 
     "esModuleInterop": true,
     "forceConsistentCasingInFileNames": true,
@@ -12,12 +14,15 @@
     "inlineSourceMap": true,
     "removeComments": true,
 
-    "module": "es2020",
+    "module": "es2022",
     "moduleResolution": "node",
     "rootDir": "./app",
     "baseUrl": ".",
     "paths": {
-      "@App/*": ["app/*"]
+      "@app/*": ["app/*"],
+      "@entities/*": ["app/entities/*"],
+      "@services/*": ["app/services/*"],
+      "@schemas/*": ["app/schemas/*"],
     },
 
     "skipLibCheck": true,
@@ -29,6 +34,7 @@
     "noImplicitOverride": true,
     "noImplicitReturns": true,
     "noPropertyAccessFromIndexSignature": true,
-    "noUncheckedIndexedAccess": true
+    "noUncheckedIndexedAccess": true,
+    "strictPropertyInitialization": false
   }
 }

@@ -1,0 +1,43 @@
+version: '3'
+
+name: pouch
+
+services:
+  app:
+    container_name: pouch_app
+    build: ./app
+    restart: unless-stopped
+    volumes:
+      - ../:/opt/app
+    environment:
+      WAIT_HOSTS: database:3306
+      WAIT_AFTER: 15
+  nginx:
+    container_name: pouch_nginx
+    image: nginx:1.23
+    ports:
+      - "80:80"
+    restart: unless-stopped
+    volumes:
+      - ./nginx/config/nginx.conf:/etc/nginx/nginx.conf
+      - ./nginx/storage/logs:/var/logs/nginx
+  database:
+    container_name: qchange_database
+    image: mariadb:10.6
+    restart: unless-stopped
+    volumes:
+      - ./database/config:/etc/mysql/conf.d
+      - ./database/storage/lib:/var/lib/mysql
+    environment:
+      MYSQL_USER: ${DB_USERNAME}
+      MYSQL_PASSWORD: ${DB_PASSWORD}
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${DB_DATABASE}
+  phpmyadmin:
+    container_name: qchange_phpmyadmin
+    image: phpmyadmin/phpmyadmin
+    restart: unless-stopped
+    external_links:
+      - database:db
+    ports:
+      - "8080:80"

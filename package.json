@@ -2,20 +2,26 @@
   "name": "pouch-js-webrunner",
   "version": "1.0.0",
   "type": "module",
+  "main": "dist/index.js",
   "scripts": {
     "build": "tsc && tsc-alias",
-    "dev": "tsx watch app/web.ts",
-    "start": "node dist/web.js",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "dev": "tsx watch --clear-screen=false app/index.ts",
+    "prod": "node dist/index.js"
   },
   "license": "ISC",
   "dependencies": {
+    "@fastify/type-provider-typebox": "^3.1.0",
+    "@sinclair/typebox": "^0.28.4",
+    "commander": "^10.0.1",
     "dotenv": "^16.0.3",
-    "express": "^4.18.2",
-    "pouch": "gitlab:pouch-group/core"
+    "fastify": "^4.15.0",
+    "mysql": "^2.18.1",
+    "pouch": "gitlab:pouch-group/core",
+    "typeorm": "^0.3.15"
   },
   "devDependencies": {
     "@types/express": "^4.17.17",
+    "ts-node": "^10.9.1",
     "tsc-alias": "^1.8.5",
     "tsx": "^3.12.6",
     "typescript": "^5.0.4"

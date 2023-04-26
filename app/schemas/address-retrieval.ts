@@ -1,15 +1,16 @@
 import { Static, Type } from '@sinclair/typebox'
 import { FastifySchema, RouteGenericInterface } from 'fastify';
 
-const ParamsSchema = Type.Object({
+const QuerystringSchema = Type.Object({
   walletType: Type.Union([Type.Literal('bitcoin')]),
-  index: Type.Integer(),
-  accountIndex: Type.Integer(),
+  groupId: Type.String(),
+  fresh: Type.Optional(Type.Boolean()),
 });
 
 export interface SchemaType extends RouteGenericInterface {
-  Params: Static<typeof ParamsSchema>,
+  Querystring: Static<typeof QuerystringSchema>,
 }
+
 export const Schema: FastifySchema = {
-  params: ParamsSchema,
+  querystring: QuerystringSchema,
 }

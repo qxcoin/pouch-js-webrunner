@@ -6,16 +6,19 @@ export class CreateAddressesTable1682101968833 implements MigrationInterface {
     return new Table({
       name: 'addresses',
       columns: [
-        { name: 'id', type: 'bigint', isPrimary: true, isGenerated: true, generationStrategy: 'increment' },
+        { name: 'id', type: 'bigint', unsigned: true, isPrimary: true, isGenerated: true, generationStrategy: 'increment' },
         { name: 'wallet_type', type: 'varchar' },
-        { name: 'wallet_id', type: 'varchar' },
-        { name: 'index', type: 'bigint' },
-        { name: 'account_index', type: 'bigint' },
+        { name: 'wallet_id', type: 'char', length: '64' },
+        { name: 'account_index', type: 'int', unsigned: true },
+        { name: 'index', type: 'int', unsigned: true },
         { name: 'hash', type: 'varchar' },
+        { name: 'group_id', type: 'varchar' },
         { name: 'created_at', type: 'timestamp', default: 'CURRENT_TIMESTAMP()' },
       ],
       indices: [
-        { columnNames: ['wallet_type', 'wallet_id', 'index', 'account_index'], isUnique: true }
+        { columnNames: ['wallet_type', 'wallet_id', 'account_index', 'index'], isUnique: true },
+        { columnNames: ['hash'], isUnique: true },
+        { columnNames: ['wallet_type', 'wallet_id', 'group_id'] },
       ]
     });
   }

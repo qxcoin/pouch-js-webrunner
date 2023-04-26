@@ -11,11 +11,14 @@ export class Address {
   @Column('varchar', { name: 'wallet_id' })
   walletId: string;
 
-  @Column('bigint')
-  index: string;
+  @Column('varchar', { name: 'group_id' })
+  groupId: string;
 
-  @Column('bigint', { name: 'account_index' })
-  accountIndex: string;
+  @Column('int', { name: 'account_index' })
+  accountIndex: number;
+
+  @Column('int')
+  index: number;
 
   @Column('varchar')
   hash: string;

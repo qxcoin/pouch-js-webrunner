@@ -22,7 +22,9 @@
       "@app/*": ["app/*"],
       "@entities/*": ["app/entities/*"],
       "@services/*": ["app/services/*"],
+      "@utils/*": ["app/utils/*"],
       "@schemas/*": ["app/schemas/*"],
+      "@commands/*": ["app/commands/*"],
     },
 
     "skipLibCheck": true,

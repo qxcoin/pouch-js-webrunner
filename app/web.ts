@@ -9,10 +9,10 @@ import {
 const fastify = Fastify({ logger: true }).withTypeProvider<TypeBoxTypeProvider>();
 
 fastify.get<AddressRetrievalSchemaType>(
-  '/addresses/:walletType/:accountIndex/:index',
+  '/address',
   { schema: AddressRetrievalSchema },
   async (req, reply) => {
-    const address = await AddressService.createAddress(req.params.walletType, req.params.index, req.params.accountIndex);
+    const address = await AddressService.get(req.query.walletType, req.query.groupId, req.query.fresh);
     return reply.send(address.hash);
   }
 );

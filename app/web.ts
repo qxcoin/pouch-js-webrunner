@@ -1,12 +1,13 @@
 import Fastify from 'fastify';
 import { TypeBoxTypeProvider } from '@fastify/type-provider-typebox';
-import { AddressService } from "@services/address.services";
+import { AddressService } from "@services/address.services.js";
+import logger from './logger.js';
 import {
   Schema as AddressRetrievalSchema,
   SchemaType as AddressRetrievalSchemaType,
-} from '@schemas/address-retrieval';
+} from '@schemas/address-retrieval.js';
 
-const fastify = Fastify({ logger: true }).withTypeProvider<TypeBoxTypeProvider>();
+const fastify = Fastify({ logger }).withTypeProvider<TypeBoxTypeProvider>();
 
 fastify.get<AddressRetrievalSchemaType>(
   '/address',

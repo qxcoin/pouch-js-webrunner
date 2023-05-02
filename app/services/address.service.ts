@@ -5,7 +5,13 @@ import w, { walletId } from "@app/wallet.js";
 
 export class AddressService {
 
-  public static async get(walletType: WalletTypes, groupId: string, fresh: boolean = false) {
+  public static async get(hash: string): Promise<Address | null> {
+    const repo = dataSource.getRepository(Address);
+    const address = await repo.findOneBy({ hash });
+    return address;
+  }
+
+  public static async getActive(walletType: WalletTypes, groupId: string, fresh: boolean = false) {
     const repo = dataSource.getRepository(Address);
     const address = await repo.findOne({ where: { walletType, walletId, groupId }, order: { id: 'desc' } });
     if (fresh || address === null) {
@@ -32,6 +38,30 @@ export class AddressService {
     address.hash = (await w.create(walletType).getAddress(index, accountIndex)).hash;
     await repo.save(address);
     return address;
+  }
+
+  /**
+   * Active addresses are last address of each group.
+   */
+  public static async getAllActive(): Promise<Address[]> {
+    const repo = dataSource.getRepository(Address);
+    const qb = repo.createQueryBuilder('address');
+    const sq = qb.subQuery();
+    sq.select('MAX(subAddress.id)');
+    sq.from(Address, 'subAddress');
+    sq.where('subAddress.wallet_id = :walletId', { walletId });
+    sq.groupBy('subAddress.group_id');
+    qb.where('address.id IN ' + sq.getQuery());
+    qb.cache(2 * 60 * 1000);
+    return await qb.getMany();
+  }
+
+  public static async hasActive(addressHash: string): Promise<boolean> {
+    const addresses = await AddressService.getAllActive();
+    for (const address of addresses)
+      if (address.hash === addressHash)
+        return true;
+    return false;
   }
 
 }

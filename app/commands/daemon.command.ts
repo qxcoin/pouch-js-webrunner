@@ -1,4 +1,4 @@
-import { sleep } from "@utils/helpers";
+import { sleep } from "@utils/helpers.js";
 
 export class DaemonCommand {
 

@@ -16,7 +16,7 @@ services:
     container_name: pouch_nginx
     image: nginx:1.23
     ports:
-      - "80:80"
+      - "3030:80"
     restart: unless-stopped
     volumes:
       - ./nginx/config/nginx.conf:/etc/nginx/nginx.conf

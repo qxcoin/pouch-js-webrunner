@@ -3,6 +3,7 @@ import w, { walletId } from "@app/wallet.js";
 import { AddressService } from './address.service.js';
 import { TransactionService } from './transaction.service.js';
 import wallet from '@app/wallet.js';
+import { wallets as walletsConfig } from '@app/config.js';
 
 export class BlockchainService {
 
@@ -37,7 +38,8 @@ export class BlockchainService {
     }
     for (const out of outputs) {
       if (await TransactionService.has(out.address, transaction.hash)) continue;
-      TransactionService.create(walletType, inputAddresses, out.address, transaction.hash, transaction.data, out.value, blockHeight);
+      const currency = walletsConfig[walletType].coin;
+      TransactionService.create(walletType, inputAddresses, out.address, transaction.hash, transaction.data, currency, out.value, blockHeight);
     }
   }
 
@@ -46,14 +48,18 @@ export class BlockchainService {
     if (!(await AddressService.hasActive(transaction.from))) return;
     // if transaction already exists, don't insert it again
     if (await TransactionService.has(transaction.to, transaction.hash)) return;
-    TransactionService.create(walletType, [transaction.from], transaction.to, transaction.hash, transaction.data, transaction.value, blockHeight);
+    // if we don't have any token associated to the contract address, do nothing
+    const currency = Object.keys(walletsConfig[walletType].tokens).find(key => walletsConfig[walletType].tokens[key] === transaction.contractAddress);
+    if (undefined === currency) return;
+    TransactionService.create(walletType, [transaction.from], transaction.to, transaction.hash, transaction.data, currency, transaction.value, blockHeight);
   }
 
   public static async transfer(walletType: WalletTypes, from: string, to: string, amount: bigint): Promise<string> {
     const fromAddr = await AddressService.get(from);
     if (null === fromAddr) throw new Error('From address not found in wallet.');
     if (walletType !== fromAddr.walletType || walletId !== fromAddr.walletId) throw new Error('From address is not part of current wallet.');
-    const transactions = await TransactionService.findSpendable(walletType, from, amount);
+    const currency = walletsConfig[walletType].coin;
+    const transactions = await TransactionService.findSpendable(walletType, from, currency, amount);
     const w = wallet.create(walletType);
     const fromPouchAddr = await w.getAddress(fromAddr.index, fromAddr.accountIndex);
     const spending = transactions.map((t) => new RawTransaction(t.hash, t.data));
@@ -63,11 +69,13 @@ export class BlockchainService {
     return transaction.hash;
   }
 
-  public static async transferToken(walletType: WalletTypes, contractAddress: string, from: string, to: string, amount: bigint): Promise<string> {
+  public static async transferToken(walletType: WalletTypes, tokenCode: string, from: string, to: string, amount: bigint): Promise<string> {
     const fromAddr = await AddressService.get(from);
     if (null === fromAddr) throw new Error('From address not found in wallet.');
     if (walletType !== fromAddr.walletType || walletId !== fromAddr.walletId) throw new Error('From address is not part of current wallet.');
-    const transactions = await TransactionService.findSpendable(walletType, from, amount);
+    const contractAddress = walletsConfig[walletType].tokens[tokenCode];
+    if (undefined === contractAddress) throw new Error(`Unable to find the contract address for token ${tokenCode}.`);
+    const transactions = await TransactionService.findSpendable(walletType, from, tokenCode, amount);
     const w = wallet.create(walletType);
     const fromPouchAddr = await w.getAddress(fromAddr.index, fromAddr.accountIndex);
     const transaction = await w.createTokenTransaction(contractAddress, fromPouchAddr, to, amount);

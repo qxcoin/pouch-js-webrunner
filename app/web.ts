@@ -34,7 +34,7 @@ fastify.post<TransferSchemaType>(
     if (conf['coin'] === req.body.currency)
       return BlockchainService.transfer(req.body.walletType, req.body.from, req.body.to, BigInt(req.body.amount));
     else if (undefined !== conf['tokens'][req.body.currency])
-      return BlockchainService.transferToken(req.body.walletType, conf['tokens'][req.body.currency]!, req.body.from, req.body.to, BigInt(req.body.amount));
+      return BlockchainService.transferToken(req.body.walletType, req.body.currency, req.body.from, req.body.to, BigInt(req.body.amount));
     else
       return reply.status(400).send(new Error(`Currency ${req.body.currency} is not supported in ${req.body.walletType} wallet.`));
   }

@@ -10,7 +10,7 @@ export class TransactionService {
     return await repo.exist({ where: { to, hash } });
   }
 
-  public static async create(walletType: WalletTypes, from: string[], to: string, hash: string, data: string, value: bigint, blockHeight?: number) {
+  public static async create(walletType: WalletTypes, from: string[], to: string, hash: string, data: string, currency: string, value: bigint, blockHeight?: number) {
     const repo = dataSource.getRepository(Transaction);
     const transaction = new Transaction();
     transaction.walletType = walletType;
@@ -20,21 +20,22 @@ export class TransactionService {
     transaction.hash = hash;
     transaction.data = data;
     transaction.value = value.toString();
+    transaction.currency = currency;
     transaction.blockHeight = blockHeight;
     await repo.save(transaction);
     // let's report the transaction
     // TODO: maybe later we move this function to queued jobs using events
-    fetch(process.env['AUDIENCE_URL']!, {
+    fetch(process.env['AUDIENCE_ENDPOINT']!, {
       method: 'POST',
-      headers: { 'Accept': 'application/json', 'Content-Type': 'application/json' },
+      headers: { 'Accept': 'application/json', 'Content-Type': 'application/json', 'Authorization': `Basic ${process.env['AUDIENCE_API_KEY']!}` },
       body: JSON.stringify(transaction),
     });
     return transaction;
   }
 
-  public static async findSpendable(walletType: WalletTypes, from: string, amount: bigint) {
+  public static async findSpendable(walletType: WalletTypes, from: string, currency: string, amount: bigint) {
     const repo = dataSource.getRepository(Transaction);
-    const transactions = await repo.findBy({ walletType, walletId, to: from, spent: false });
+    const transactions = await repo.findBy({ walletType, walletId, to: from, currency, spent: false });
     // let's sort transactions from the ones that have smallest value to bigger values
     // so we first spend smaller transactions
     // this will help us to have fewer inputs and smaller TX size next time

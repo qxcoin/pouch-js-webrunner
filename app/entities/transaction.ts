@@ -26,6 +26,9 @@ export class Transaction {
   @Column('bigint')
   value: string;
 
+  @Column('varchar')
+  currency: string;
+
   @Column('int', { name: 'block_height' })
   blockHeight?: number;
 

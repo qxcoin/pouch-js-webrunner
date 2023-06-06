@@ -2,9 +2,12 @@ import type { NetworkType, WalletConfigs as PouchWalletConfigs } from 'pouch';
 
 export const port = 3000;
 
+type CoinCode = string;
+type TokenCode = string;
+type ContractAddress = string;
 type WalletConfig<WalletName extends keyof PouchWalletConfigs> = PouchWalletConfigs[WalletName] & {
-  coin: string,
-  tokens: Record<string, string>,
+  coin: CoinCode,
+  tokens: Record<TokenCode, ContractAddress>,
   requiredConfirmations: number,
   blockTime: number,
 }
@@ -42,8 +45,8 @@ const tron: WalletConfig<'tron'> = {
 const ethereum: WalletConfig<'ethereum'> = {
   provider: process.env['ETHEREUM_PROVIDER']!,
   coin: 'ETH',
-  contracts: {},
   tokens: {},
+  contracts: {},
   requiredConfirmations: 1,
   blockTime: 12 * 1000,
 }
@@ -51,6 +54,7 @@ const bsc: WalletConfig<'bsc'> = {
   provider: process.env['BSC_PROVIDER']!,
   coin: 'BNB',
   tokens: {},
+  contracts: {},
   requiredConfirmations: 1,
   blockTime: 3 * 1000,
 }

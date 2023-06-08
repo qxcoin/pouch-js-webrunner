@@ -6,7 +6,7 @@ import { wallets as walletsConfig } from '@app/config.js';
 const querystringSchema = yup.object({
   walletType: yup.mixed<keyof typeof walletsConfig>().oneOf(Object.keys(walletsConfig) as Array<keyof typeof walletsConfig>).required(),
   groupId: yup.string().required(),
-  fresh: yup.boolean(),
+  fresh: yup.string().matches(/^0|1$/),
 });
 
 export interface SchemaType extends RouteGenericInterface {

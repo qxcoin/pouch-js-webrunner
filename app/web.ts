@@ -21,7 +21,7 @@ fastify.get<AddressRetrievalSchemaType>(
   '/address',
   { schema: addressRetrievalSchema },
   async (req, reply) => {
-    const address = await AddressService.getActive(req.query.walletType, req.query.groupId, req.query.fresh);
+    const address = await AddressService.getActive(req.query.walletType, req.query.groupId, Boolean(Number(req.query.fresh)));
     return reply.send(address.hash);
   }
 );
@@ -37,6 +37,13 @@ fastify.post<TransferSchemaType>(
       return BlockchainService.transferToken(req.body.walletType, req.body.currency, req.body.from, req.body.to, BigInt(req.body.amount));
     else
       return reply.status(400).send(new Error(`Currency ${req.body.currency} is not supported in ${req.body.walletType} wallet.`));
+  }
+);
+
+fastify.all(
+  '/ping',
+  async (req, reply) => {
+    return reply.send('pong');
   }
 );
 

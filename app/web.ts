@@ -40,7 +40,7 @@ fastify.post<TransferSchemaType>(
   }
 );
 
-fastify.post(
+fastify.all(
   '/audience',
   async (req, reply) => {
     logger.debug({ body: req.body }, 'Received a request.');

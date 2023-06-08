@@ -16,7 +16,7 @@ services:
     container_name: pouch_nginx
     image: nginx:1.23
     ports:
-      - "3030:80"
+      - "3000:80"
     restart: unless-stopped
     volumes:
       - ./nginx/config/nginx.conf:/etc/nginx/nginx.conf
@@ -45,7 +45,7 @@ services:
     external_links:
       - database:db
     ports:
-      - "8080:80"
+      - "3030:80"
   phpredisadmin:
     container_name: pouch_phpredisadmin
     image: erikdubbelboer/phpredisadmin
@@ -54,4 +54,4 @@ services:
       REDIS_1_HOST: redis
       REDIS_1_AUTH: ${REDIS_PASSWORD}
     ports:
-      - "8081:80"
+      - "3031:80"

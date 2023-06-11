@@ -37,7 +37,11 @@ export class BlockchainService {
       inputAddresses.push(address);
     }
     for (const out of outputs) {
-      if (await TransactionService.has(out.address, transaction.hash)) continue;
+      const oldTx = await TransactionService.find(out.address, transaction.hash);
+      if (oldTx) {
+        if (blockHeight && !oldTx.blockHeight) await TransactionService.confirm(oldTx, blockHeight);
+        continue;
+      }
       const currency = walletsConfig[walletType].coin;
       TransactionService.create(walletType, inputAddresses, out.address, transaction.hash, transaction.data, currency, out.value, blockHeight);
     }
@@ -46,11 +50,17 @@ export class BlockchainService {
   private static async handleTokenTransaction(walletType: WalletTypes, transaction: TokenTransaction, blockHeight?: number) {
     // if the transaction is not sending money to us, we have nothing to do with it
     if (!(await AddressService.hasActive(transaction.from))) return;
-    // if transaction already exists, don't insert it again
-    if (await TransactionService.has(transaction.to, transaction.hash)) return;
+    // if transaction already exists, don't insert it again, and if possible confirm it
+    const oldTx = await TransactionService.find(transaction.to, transaction.hash);
+    if (oldTx) {
+      if (blockHeight && !oldTx.blockHeight) await TransactionService.confirm(oldTx, blockHeight);
+      return;
+    }
     // if we don't have any token associated to the contract address, do nothing
     const currency = Object.keys(walletsConfig[walletType].tokens).find(key => walletsConfig[walletType].tokens[key] === transaction.contractAddress);
-    if (undefined === currency) return;
+    if (undefined === currency) {
+      return;
+    }
     TransactionService.create(walletType, [transaction.from], transaction.to, transaction.hash, transaction.data, currency, transaction.value, blockHeight);
   }
 

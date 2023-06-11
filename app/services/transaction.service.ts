@@ -5,6 +5,11 @@ import { walletId } from "@app/wallet.js";
 
 export class TransactionService {
 
+  public static async find(to: string, hash: string) {
+    const repo = dataSource.getRepository(Transaction);
+    return await repo.findOne({ where: { to, hash } });
+  }
+
   public static async has(to: string, hash: string) {
     const repo = dataSource.getRepository(Transaction);
     return await repo.exist({ where: { to, hash } });
@@ -23,13 +28,7 @@ export class TransactionService {
     transaction.currency = currency;
     transaction.blockHeight = blockHeight;
     await repo.save(transaction);
-    // let's report the transaction
-    // TODO: maybe later we move this function to queued jobs using events
-    fetch(process.env['AUDIENCE_ENDPOINT']!, {
-      method: 'POST',
-      headers: { 'Accept': 'application/json', 'Content-Type': 'application/json', 'Authorization': `Basic ${process.env['AUDIENCE_API_KEY']!}` },
-      body: JSON.stringify(transaction),
-    });
+    this.reportTransaction(transaction);
     return transaction;
   }
 
@@ -59,12 +58,31 @@ export class TransactionService {
     }
   }
 
+  public static async confirm(transaction: Transaction, blockHeight: number) {
+    const repo = dataSource.getRepository(Transaction);
+    transaction.blockHeight = blockHeight;
+    await repo.save(transaction);
+    this.reportTransaction(transaction);
+  }
+
   public static async spend(transactions: Transaction | Transaction[]) {
     if (transactions instanceof Transaction) transactions = [transactions];
     const repo = dataSource.getRepository(Transaction);
     transactions.forEach((t) => {
       t.spent = true;
       repo.save(t);
+    });
+  }
+
+  /**
+   * Report the transaction to the audience.
+   * TODO: maybe later we move this function to queued jobs using events
+   */
+  private static async reportTransaction(transaction: Transaction) {
+    fetch(process.env['AUDIENCE_ENDPOINT']!, {
+      method: 'POST',
+      headers: { 'Accept': 'application/json', 'Content-Type': 'application/json', 'Authorization': `Basic ${process.env['AUDIENCE_API_KEY']!}` },
+      body: JSON.stringify(transaction),
     });
   }
 

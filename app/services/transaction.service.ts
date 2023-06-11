@@ -79,9 +79,10 @@ export class TransactionService {
    * TODO: maybe later we move this function to queued jobs using events
    */
   private static async reportTransaction(transaction: Transaction) {
+    const credentials = Buffer.from(process.env['AUDIENCE_API_KEY']!).toString('base64');
     fetch(process.env['AUDIENCE_ENDPOINT']!, {
       method: 'POST',
-      headers: { 'Accept': 'application/json', 'Content-Type': 'application/json', 'Authorization': `Basic ${process.env['AUDIENCE_API_KEY']!}` },
+      headers: { 'Accept': 'application/json', 'Content-Type': 'application/json', 'Authorization': `Basic ${credentials}` },
       body: JSON.stringify(transaction),
     });
   }

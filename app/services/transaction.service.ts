@@ -32,9 +32,17 @@ export class TransactionService {
     return transaction;
   }
 
-  public static async findSpendable(walletType: WalletTypes, from: string, currency: string, amount: bigint) {
+  public static async findSpendable(addressHash: string, currency: string, walletType: WalletTypes) {
     const repo = dataSource.getRepository(Transaction);
-    const transactions = await repo.findBy({ walletType, walletId, to: from, currency, spent: false });
+    const transactions = await repo.findBy({ walletType, walletId, to: addressHash, currency, spent: false });
+    return transactions;
+  }
+
+  /**
+   * Find spendable transactions to satisfy the amount provided.
+   */
+  public static async satisfy(addressHash: string, currency: string, walletType: WalletTypes, amount: bigint) {
+    const transactions = await this.findSpendable(addressHash, currency, walletType);
     // let's sort transactions from the ones that have smallest value to bigger values
     // so we first spend smaller transactions
     // this will help us to have fewer inputs and smaller TX size next time
@@ -49,7 +57,7 @@ export class TransactionService {
       sum += BigInt(t.value);
       if (sum >= amount) break;
     }
-    // if sum of transactions value is not bigger than the amount we need
+    // if sum of transactions value is not bigger or equal than the amount we need
     // we don't have enough balance so we throw an error
     if (sum < amount) {
       throw new Error('Not enough balance.');

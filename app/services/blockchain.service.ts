@@ -69,7 +69,7 @@ export class BlockchainService {
     if (null === fromAddr) throw new Error('From address not found in wallet.');
     if (walletType !== fromAddr.walletType || walletId !== fromAddr.walletId) throw new Error('From address is not part of current wallet.');
     const currency = walletsConfig[walletType].coin;
-    const transactions = await TransactionService.findSpendable(walletType, from, currency, amount);
+    const transactions = await TransactionService.satisfy(from, currency, walletType, amount);
     const w = wallet.create(walletType);
     const fromPouchAddr = await w.getAddress(fromAddr.index, fromAddr.accountIndex);
     const spending = transactions.map((t) => new RawTransaction(t.hash, t.data));
@@ -85,7 +85,7 @@ export class BlockchainService {
     if (walletType !== fromAddr.walletType || walletId !== fromAddr.walletId) throw new Error('From address is not part of current wallet.');
     const contractAddress = walletsConfig[walletType].tokens[tokenCode];
     if (undefined === contractAddress) throw new Error(`Unable to find the contract address for token ${tokenCode}.`);
-    const transactions = await TransactionService.findSpendable(walletType, from, tokenCode, amount);
+    const transactions = await TransactionService.satisfy(from, tokenCode, walletType, amount);
     const w = wallet.create(walletType);
     const fromPouchAddr = await w.getAddress(fromAddr.index, fromAddr.accountIndex);
     const transaction = await w.createTokenTransaction(contractAddress, fromPouchAddr, to, amount);

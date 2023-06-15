@@ -2,6 +2,7 @@ import { WalletTypes } from 'pouch';
 import dataSource from '@app/data-source.js';
 import { Address } from '@entities/address.js';
 import w, { walletId } from "@app/wallet.js";
+import { TransactionService } from './transaction.service';
 
 export class AddressService {
 
@@ -62,6 +63,15 @@ export class AddressService {
       if (address.hash === addressHash)
         return true;
     return false;
+  }
+
+  public static async getBalance(addressHash: string, currency: string, walletType: WalletTypes): Promise<bigint> {
+    // in order to get balance of an address we need to
+    // find all unspent transactions of that address and summarize their value
+    const transactions = await TransactionService.findSpendable(addressHash, currency, walletType);
+    let sum = 0n;
+    for (const t of transactions) sum += BigInt(t.value);
+    return sum;
   }
 
 }

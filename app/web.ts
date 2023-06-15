@@ -7,6 +7,10 @@ import {
   SchemaType as AddressRetrievalSchemaType,
 } from '@schemas/address-retrieval.schema.js';
 import {
+  schema as addressBalanceRetrievalSchema,
+  SchemaType as AddressBalanceRetrievalSchemaType,
+} from '@schemas/address-balance-retrieval.schema.js';
+import {
   schema as transferSchema,
   SchemaType as TransferSchemaType,
 } from '@schemas/transfer.schema.js';
@@ -23,6 +27,15 @@ fastify.get<AddressRetrievalSchemaType>(
   async (req, reply) => {
     const address = await AddressService.getActive(req.query.walletType, req.query.groupId, Boolean(Number(req.query.fresh)));
     return reply.send(address.hash);
+  }
+);
+
+fastify.get<AddressBalanceRetrievalSchemaType>(
+  '/address/balance',
+  { schema: addressBalanceRetrievalSchema },
+  async (req, reply) => {
+    const balance = await AddressService.getBalance(req.query.addressHash, req.query.currency, req.query.walletType);
+    return reply.send(balance.toString());
   }
 );
 

@@ -15,6 +15,7 @@ import {
   SchemaType as TransferSchemaType,
 } from '@schemas/transfer.schema.js';
 import { BlockchainService } from './services/blockchain.service.js';
+import { walletId } from "./wallet.js";
 
 const fastify = Fastify({
   logger,
@@ -50,6 +51,13 @@ fastify.post<TransferSchemaType>(
       return BlockchainService.transferToken(req.body.walletType, req.body.currency, req.body.from, req.body.to, BigInt(req.body.amount));
     else
       return reply.status(400).send(new Error(`Currency ${req.body.currency} is not supported in ${req.body.walletType} wallet.`));
+  }
+);
+
+fastify.get(
+  '/wallet/id',
+  async (req, reply) => {
+    return reply.send(walletId);
   }
 );
 

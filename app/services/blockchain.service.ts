@@ -1,4 +1,4 @@
-import { RawTransaction, Transaction, TokenTransaction, WalletTypes } from 'pouch';
+import { RawTransaction, CoinTransaction, TokenTransaction, WalletTypes } from 'pouch';
 import w, { walletId } from "@app/wallet.js";
 import { AddressService } from './address.service.js';
 import { TransactionService } from './transaction.service.js';
@@ -17,9 +17,14 @@ export class BlockchainService {
     }
   }
 
-  public static async handleTransaction(walletType: WalletTypes, transaction: Transaction | TokenTransaction, blockHeight?: number) {
+  public static async handleTransaction(walletType: WalletTypes, transaction: CoinTransaction | TokenTransaction, blockHeight?: number) {
     if (transaction instanceof TokenTransaction)
       return this.handleTokenTransaction(walletType, transaction, blockHeight);
+    else if (transaction instanceof CoinTransaction)
+      return this.handleCoinTransaction(walletType, transaction, blockHeight);
+  }
+
+  private static async handleCoinTransaction(walletType: WalletTypes, transaction: CoinTransaction, blockHeight?: number) {
     const outputs: { address: string, value: bigint }[] = [];
     for (const out of transaction.outputs) {
       const address = await out.address();
@@ -64,10 +69,20 @@ export class BlockchainService {
     TransactionService.create(walletType, [transaction.from], transaction.to, transaction.hash, transaction.data, currency, transaction.value, blockHeight);
   }
 
-  public static async transfer(walletType: WalletTypes, from: string, to: string, amount: bigint): Promise<string> {
+  public static transfer(walletType: WalletTypes, currency: string, from: string, to: string, amount: bigint): Promise<string> {
+    const conf = walletsConfig[walletType];
+    if (conf['coin'] === currency)
+      return BlockchainService.transferCoin(walletType, from, to, amount);
+    else if (undefined !== conf['tokens'][currency])
+      return BlockchainService.transferToken(walletType, currency, from, to, amount);
+    else
+      throw new Error(`Currency ${currency} is not supported in ${walletType} wallet.`);
+  }
+
+  public static async transferCoin(walletType: WalletTypes, from: string, to: string, amount: bigint): Promise<string> {
     const fromAddr = await AddressService.get(from);
-    if (null === fromAddr) throw new Error('From address not found in wallet.');
-    if (walletType !== fromAddr.walletType || walletId !== fromAddr.walletId) throw new Error('From address is not part of current wallet.');
+    if (null === fromAddr) throw new Error(`Address ${from} does not exist in wallet.`);
+    if (walletType !== fromAddr.walletType || walletId !== fromAddr.walletId) throw new Error(`Address ${from} is not part of current wallet.`);
     const currency = walletsConfig[walletType].coin;
     const transactions = await TransactionService.satisfy(from, currency, walletType, amount);
     const w = wallet.create(walletType);
@@ -81,7 +96,7 @@ export class BlockchainService {
 
   public static async transferToken(walletType: WalletTypes, tokenCode: string, from: string, to: string, amount: bigint): Promise<string> {
     const fromAddr = await AddressService.get(from);
-    if (null === fromAddr) throw new Error('From address not found in wallet.');
+    if (null === fromAddr) throw new Error(`Address ${from} does not exist in wallet.`);
     if (walletType !== fromAddr.walletType || walletId !== fromAddr.walletId) throw new Error('From address is not part of current wallet.');
     const contractAddress = walletsConfig[walletType].tokens[tokenCode];
     if (undefined === contractAddress) throw new Error(`Unable to find the contract address for token ${tokenCode}.`);

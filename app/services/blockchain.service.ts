@@ -1,9 +1,16 @@
-import { RawTransaction, CoinTransaction, TokenTransaction, WalletTypes } from 'pouch';
+import {
+  RawTransaction,
+  CoinTransaction,
+  TokenTransaction,
+  WalletTypes,
+  InsufficientBalanceError as PouchInsufficientBalanceError,
+} from 'pouch';
 import w, { walletId } from "@app/wallet.js";
 import { AddressService } from './address.service.js';
 import { TransactionService } from './transaction.service.js';
 import wallet from '@app/wallet.js';
 import { wallets as walletsConfig } from '@app/config.js';
+import { InsufficientBalanceError } from '@app/utils/errors.js';
 
 export class BlockchainService {
 
@@ -44,7 +51,8 @@ export class BlockchainService {
     for (const out of outputs) {
       const oldTx = await TransactionService.find(out.address, transaction.hash);
       if (oldTx) {
-        if (blockHeight && !oldTx.blockHeight) await TransactionService.confirm(oldTx, blockHeight);
+        if (blockHeight && !oldTx.blockHeight)
+          await TransactionService.confirm(oldTx, blockHeight);
         continue;
       }
       const currency = walletsConfig[walletType].coin;
@@ -58,7 +66,8 @@ export class BlockchainService {
     // if transaction already exists, don't insert it again, and if possible confirm it
     const oldTx = await TransactionService.find(transaction.to, transaction.hash);
     if (oldTx) {
-      if (blockHeight && !oldTx.blockHeight) await TransactionService.confirm(oldTx, blockHeight);
+      if (blockHeight && !oldTx.blockHeight)
+        await TransactionService.confirm(oldTx, blockHeight);
       return;
     }
     // if we don't have any token associated to the contract address, do nothing
@@ -76,19 +85,28 @@ export class BlockchainService {
     else if (undefined !== conf['tokens'][currency])
       return BlockchainService.transferToken(walletType, currency, from, to, amount);
     else
-      throw new Error(`Currency ${currency} is not supported in ${walletType} wallet.`);
+      throw new Error(`Currency [${currency}] is not supported in ${walletType} wallet.`);
   }
 
   public static async transferCoin(walletType: WalletTypes, from: string, to: string, amount: bigint): Promise<string> {
     const fromAddr = await AddressService.get(from);
-    if (null === fromAddr) throw new Error(`Address ${from} does not exist in wallet.`);
-    if (walletType !== fromAddr.walletType || walletId !== fromAddr.walletId) throw new Error(`Address ${from} is not part of current wallet.`);
+    if (null === fromAddr) {
+      throw new Error(`Address [${from}] does not exist in wallet.`);
+    }
+    if (walletType !== fromAddr.walletType || walletId !== fromAddr.walletId) {
+      throw new Error(`Address [${from}] is not part of current wallet.`);
+    }
     const currency = walletsConfig[walletType].coin;
     const transactions = await TransactionService.satisfy(from, currency, walletType, amount);
     const w = wallet.create(walletType);
     const fromPouchAddr = await w.getAddress(fromAddr.index, fromAddr.accountIndex);
     const spending = transactions.map((t) => new RawTransaction(t.hash, t.data));
-    const transaction = await w.createTransaction(fromPouchAddr, to, amount, spending);
+    try {
+      var transaction = await w.createTransaction(fromPouchAddr, to, amount, spending);
+    } catch (e) {
+      if (e instanceof PouchInsufficientBalanceError) throw new InsufficientBalanceError(e.message);
+      else throw e;
+    }
     await w.broadcastTransaction(transaction);
     await TransactionService.spend(transactions);
     return transaction.hash;
@@ -96,14 +114,25 @@ export class BlockchainService {
 
   public static async transferToken(walletType: WalletTypes, tokenCode: string, from: string, to: string, amount: bigint): Promise<string> {
     const fromAddr = await AddressService.get(from);
-    if (null === fromAddr) throw new Error(`Address ${from} does not exist in wallet.`);
-    if (walletType !== fromAddr.walletType || walletId !== fromAddr.walletId) throw new Error('From address is not part of current wallet.');
+    if (null === fromAddr) {
+      throw new Error(`Address [${from}] does not exist in wallet.`);
+    }
+    if (walletType !== fromAddr.walletType || walletId !== fromAddr.walletId) {
+      throw new Error(`Address [${from}] is not part of current wallet.`);
+    }
     const contractAddress = walletsConfig[walletType].tokens[tokenCode];
-    if (undefined === contractAddress) throw new Error(`Unable to find the contract address for token ${tokenCode}.`);
+    if (undefined === contractAddress) {
+      throw new Error(`Token [${tokenCode}] does not have a contract address.`);
+    }
     const transactions = await TransactionService.satisfy(from, tokenCode, walletType, amount);
     const w = wallet.create(walletType);
     const fromPouchAddr = await w.getAddress(fromAddr.index, fromAddr.accountIndex);
-    const transaction = await w.createTokenTransaction(contractAddress, fromPouchAddr, to, amount);
+    try {
+      var transaction = await w.createTokenTransaction(contractAddress, fromPouchAddr, to, amount);
+    } catch (e) {
+      if (e instanceof PouchInsufficientBalanceError) throw new InsufficientBalanceError(e.message);
+      else throw e;
+    }
     await w.broadcastTransaction(transaction);
     await TransactionService.spend(transactions);
     return transaction.hash;

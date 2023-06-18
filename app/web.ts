@@ -1,7 +1,7 @@
 import Fastify from 'fastify';
+import { createError } from '@fastify/error';
 import { AddressService } from "@services/address.service.js";
 import logger from './logger.js';
-import { wallets as walletsConfig } from './config.js';
 import {
   schema as addressRetrievalSchema,
   SchemaType as AddressRetrievalSchemaType,
@@ -16,6 +16,7 @@ import {
 } from '@schemas/transfer.schema.js';
 import { BlockchainService } from './services/blockchain.service.js';
 import { walletId } from "./wallet.js";
+import { InsufficientBalanceError } from './utils/errors.js';
 
 const fastify = Fastify({
   logger,
@@ -47,7 +48,8 @@ fastify.post<TransferSchemaType>(
     try {
       return await BlockchainService.transfer(req.body.walletType, req.body.currency, req.body.from, req.body.to, BigInt(req.body.amount));
     } catch (e) {
-      return reply.status(400).send(e);
+      if (e instanceof InsufficientBalanceError) throw new (createError('POUCH_ERR_INSUFFICIENT_BALANCE', e.message, 400));
+      else throw e;
     }
   }
 );

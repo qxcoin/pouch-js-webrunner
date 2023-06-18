@@ -6,13 +6,20 @@ import { TransactionService } from './transaction.service';
 
 export class AddressService {
 
+  /**
+   * Get an address by its hash.
+   */
   public static async get(hash: string): Promise<Address | null> {
     const repo = dataSource.getRepository(Address);
     const address = await repo.findOneBy({ hash });
     return address;
   }
 
-  public static async getActive(walletType: WalletTypes, groupId: string, fresh: boolean = false) {
+  /**
+   * Get last active address of current wallet and group or create an address if no address exists.
+   * NOTE: Active addresses are last address of each group.
+   */
+  public static async getActive(walletType: WalletTypes, groupId: string, fresh: boolean = false): Promise<Address> {
     const repo = dataSource.getRepository(Address);
     const address = await repo.findOne({ where: { walletType, walletId, groupId }, order: { id: 'desc' } });
     if (fresh || address === null) {
@@ -22,27 +29,9 @@ export class AddressService {
     }
   }
 
-  public static async nextIndex(walletType: WalletTypes): Promise<number> {
-    const repo = dataSource.getRepository(Address);
-    const address = await repo.findOne({ where: { walletType, walletId }, order: { id: 'desc' } });
-    return address ? (address.index + 1) : 0;
-  }
-
-  public static async create(walletType: WalletTypes, groupId: string, index: number, accountIndex: number) {
-    const repo = dataSource.getRepository(Address);
-    const address = new Address();
-    address.walletType = walletType;
-    address.walletId = walletId;
-    address.index = index;
-    address.accountIndex = accountIndex;
-    address.groupId = groupId;
-    address.hash = (await w.create(walletType).getAddress(index, accountIndex)).hash;
-    await repo.save(address);
-    return address;
-  }
-
   /**
-   * Active addresses are last address of each group.
+   * Get active addresses of current wallet.
+   * NOTE: Active addresses are last address of each group.
    */
   public static async getAllActive(): Promise<Address[]> {
     const repo = dataSource.getRepository(Address);
@@ -57,12 +46,35 @@ export class AddressService {
     return await qb.getMany();
   }
 
-  public static async hasActive(addressHash: string): Promise<boolean> {
+  /**
+   * Determines if we have an active address with provided hash in current wallet.
+   */
+  public static async hasActive(hash: string): Promise<boolean> {
     const addresses = await AddressService.getAllActive();
-    for (const address of addresses)
-      if (address.hash === addressHash)
-        return true;
+    for (const address of addresses) if (address.hash === hash) return true;
     return false;
+  }
+
+  /**
+   * Get next index for address of current wallet.
+   */
+  public static async nextIndex(walletType: WalletTypes): Promise<number> {
+    const repo = dataSource.getRepository(Address);
+    const address = await repo.findOne({ where: { walletType, walletId }, order: { id: 'desc' } });
+    return address ? (address.index + 1) : 0;
+  }
+
+  public static async create(walletType: WalletTypes, groupId: string, index: number, accountIndex: number): Promise<Address> {
+    const repo = dataSource.getRepository(Address);
+    const address = new Address();
+    address.walletType = walletType;
+    address.walletId = walletId;
+    address.index = index;
+    address.accountIndex = accountIndex;
+    address.groupId = groupId;
+    address.hash = (await w.create(walletType).getAddress(index, accountIndex)).hash;
+    await repo.save(address);
+    return address;
   }
 
   public static async getBalance(addressHash: string, currency: string, walletType: WalletTypes): Promise<bigint> {

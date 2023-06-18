@@ -1,7 +1,8 @@
 import { WalletTypes } from 'pouch';
 import dataSource from '@app/data-source.js';
-import { Transaction } from '@entities/transaction';
+import { Transaction } from '@entities/transaction.js';
 import { walletId } from "@app/wallet.js";
+import { InsufficientBalanceError } from '@app/utils/errors.js';
 
 export class TransactionService {
 
@@ -60,7 +61,7 @@ export class TransactionService {
     // if sum of transactions value is not bigger or equal than the amount we need
     // we don't have enough balance so we throw an error
     if (sum < amount) {
-      throw new Error('Not enough balance.');
+      throw new InsufficientBalanceError('Not enough balance.');
     } else {
       return picked;
     }

@@ -10,7 +10,6 @@ import { AddressService } from './address.service.js';
 import { TransactionService } from './transaction.service.js';
 import wallet from '@app/wallet.js';
 import { wallets as walletsConfig } from '@app/config.js';
-import { InsufficientBalanceError } from '@app/utils/errors.js';
 
 export class BlockchainService {
 
@@ -101,12 +100,7 @@ export class BlockchainService {
     const w = wallet.create(walletType);
     const fromPouchAddr = await w.getAddress(fromAddr.index, fromAddr.accountIndex);
     const spending = transactions.map((t) => new RawTransaction(t.hash, t.data));
-    try {
-      var transaction = await w.createTransaction(fromPouchAddr, to, amount, spending);
-    } catch (e) {
-      if (e instanceof PouchInsufficientBalanceError) throw new InsufficientBalanceError(e.message);
-      else throw e;
-    }
+    const transaction = await w.createTransaction(fromPouchAddr, to, amount, spending);
     await w.broadcastTransaction(transaction);
     await TransactionService.spend(transactions);
     return transaction.hash;
@@ -127,12 +121,7 @@ export class BlockchainService {
     const transactions = await TransactionService.satisfy(from, tokenCode, walletType, amount);
     const w = wallet.create(walletType);
     const fromPouchAddr = await w.getAddress(fromAddr.index, fromAddr.accountIndex);
-    try {
-      var transaction = await w.createTokenTransaction(contractAddress, fromPouchAddr, to, amount);
-    } catch (e) {
-      if (e instanceof PouchInsufficientBalanceError) throw new InsufficientBalanceError(e.message);
-      else throw e;
-    }
+    const transaction = await w.createTokenTransaction(contractAddress, fromPouchAddr, to, amount);
     await w.broadcastTransaction(transaction);
     await TransactionService.spend(transactions);
     return transaction.hash;

@@ -1,7 +1,7 @@
 import { WalletTypes } from 'pouch';
 import dataSource from '@app/data-source.js';
 import { Address } from '@entities/address.js';
-import w, { walletId } from "@app/wallet.js";
+import w from "@app/wallet.js";
 import { TransactionService } from './transaction.service';
 
 export class AddressService {
@@ -16,29 +16,30 @@ export class AddressService {
   }
 
   /**
-   * Get last active address of current wallet and group or create an address if no address exists.
+   * Get last active address of provided wallet and group or create an address if no address exists.
    * NOTE: Active addresses are last address of each group.
    */
-  public static async getActive(walletType: WalletTypes, groupId: string, fresh: boolean = false): Promise<Address> {
+  public static async getActive(walletType: WalletTypes, walletId: string, groupId: string, fresh: boolean = false): Promise<Address> {
     const repo = dataSource.getRepository(Address);
     const address = await repo.findOne({ where: { walletType, walletId, groupId }, order: { id: 'desc' } });
     if (fresh || address === null) {
-      return await this.create(walletType, groupId, await this.nextIndex(walletType), 0);
+      return await this.create(walletType, walletId, groupId, await this.nextIndex(walletType, walletId), 0);
     } else {
       return address;
     }
   }
 
   /**
-   * Get active addresses of current wallet.
+   * Get all active addresses of provided wallet.
    * NOTE: Active addresses are last address of each group.
    */
-  public static async getAllActive(): Promise<Address[]> {
+  public static async getAllActive(walletType: WalletTypes, walletId: string): Promise<Address[]> {
     const repo = dataSource.getRepository(Address);
     const qb = repo.createQueryBuilder('address');
     const sq = qb.subQuery();
     sq.select('MAX(subAddress.id)');
     sq.from(Address, 'subAddress');
+    sq.where('subAddress.wallet_type = :walletType', { walletType });
     sq.where('subAddress.wallet_id = :walletId', { walletId });
     sq.groupBy('subAddress.group_id');
     qb.where('address.id IN ' + sq.getQuery());
@@ -49,22 +50,22 @@ export class AddressService {
   /**
    * Determines if we have an active address with provided hash in current wallet.
    */
-  public static async hasActive(hash: string): Promise<boolean> {
-    const addresses = await AddressService.getAllActive();
+  public static async hasActive(walletType: WalletTypes, walletId: string, hash: string): Promise<boolean> {
+    const addresses = await AddressService.getAllActive(walletType, walletId);
     for (const address of addresses) if (address.hash === hash) return true;
     return false;
   }
 
   /**
-   * Get next index for address of current wallet.
+   * Get next index for address of provided wallet.
    */
-  public static async nextIndex(walletType: WalletTypes): Promise<number> {
+  public static async nextIndex(walletType: WalletTypes, walletId: string): Promise<number> {
     const repo = dataSource.getRepository(Address);
     const address = await repo.findOne({ where: { walletType, walletId }, order: { id: 'desc' } });
     return address ? (address.index + 1) : 0;
   }
 
-  public static async create(walletType: WalletTypes, groupId: string, index: number, accountIndex: number): Promise<Address> {
+  public static async create(walletType: WalletTypes, walletId: string, groupId: string, index: number, accountIndex: number): Promise<Address> {
     const repo = dataSource.getRepository(Address);
     const address = new Address();
     address.walletType = walletType;
@@ -77,10 +78,10 @@ export class AddressService {
     return address;
   }
 
-  public static async getBalance(addressHash: string, currency: string, walletType: WalletTypes): Promise<bigint> {
+  public static async getBalance(walletType: WalletTypes, walletId: string, currency: string, addressHash: string): Promise<bigint> {
     // in order to get balance of an address we need to
     // find all unspent transactions of that address and summarize their value
-    const transactions = await TransactionService.findSpendable(addressHash, currency, walletType);
+    const transactions = await TransactionService.findSpendable(walletType, walletId, currency, addressHash);
     let sum = 0n;
     for (const t of transactions) sum += BigInt(t.value);
     return sum;

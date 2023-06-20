@@ -3,12 +3,10 @@ import {
   CoinTransaction,
   TokenTransaction,
   WalletTypes,
-  InsufficientBalanceError as PouchInsufficientBalanceError,
 } from 'pouch';
-import w, { walletId } from "@app/wallet.js";
 import { AddressService } from './address.service.js';
 import { TransactionService } from './transaction.service.js';
-import wallet from '@app/wallet.js';
+import w, { walletId } from '@app/wallet.js';
 import { wallets as walletsConfig } from '@app/config.js';
 
 export class BlockchainService {
@@ -34,7 +32,7 @@ export class BlockchainService {
     const outputs: { address: string, value: bigint }[] = [];
     for (const out of transaction.outputs) {
       const address = await out.address();
-      if (await AddressService.hasActive(address)) {
+      if (await AddressService.hasActive(walletType, walletId, address)) {
         outputs.push({ address, value: out.value });
       }
     }
@@ -55,13 +53,13 @@ export class BlockchainService {
         continue;
       }
       const currency = walletsConfig[walletType].coin;
-      TransactionService.create(walletType, inputAddresses, out.address, transaction.hash, transaction.data, currency, out.value, blockHeight);
+      TransactionService.create(walletType, walletId, inputAddresses, out.address, transaction.hash, transaction.data, currency, out.value, blockHeight);
     }
   }
 
   private static async handleTokenTransaction(walletType: WalletTypes, transaction: TokenTransaction, blockHeight?: number) {
     // if the transaction is not sending money to us, we have nothing to do with it
-    if (!(await AddressService.hasActive(transaction.from))) return;
+    if (!(await AddressService.hasActive(walletType, walletId, transaction.from))) return;
     // if transaction already exists, don't insert it again, and if possible confirm it
     const oldTx = await TransactionService.find(transaction.to, transaction.hash);
     if (oldTx) {
@@ -74,7 +72,7 @@ export class BlockchainService {
     if (undefined === currency) {
       return;
     }
-    TransactionService.create(walletType, [transaction.from], transaction.to, transaction.hash, transaction.data, currency, transaction.value, blockHeight);
+    TransactionService.create(walletType, walletId, [transaction.from], transaction.to, transaction.hash, transaction.data, currency, transaction.value, blockHeight);
   }
 
   public static transfer(walletType: WalletTypes, currency: string, from: string, to: string, amount: bigint): Promise<string> {
@@ -96,12 +94,12 @@ export class BlockchainService {
       throw new Error(`Address [${from}] is not part of current wallet.`);
     }
     const currency = walletsConfig[walletType].coin;
-    const transactions = await TransactionService.satisfy(from, currency, walletType, amount);
-    const w = wallet.create(walletType);
-    const fromPouchAddr = await w.getAddress(fromAddr.index, fromAddr.accountIndex);
+    const transactions = await TransactionService.satisfy(walletType, walletId, currency, from, amount);
+    const wallet = w.create(walletType);
+    const fromPouchAddr = await wallet.getAddress(fromAddr.index, fromAddr.accountIndex);
     const spending = transactions.map((t) => new RawTransaction(t.hash, t.data));
-    const transaction = await w.createTransaction(fromPouchAddr, to, amount, spending);
-    await w.broadcastTransaction(transaction);
+    const transaction = await wallet.createTransaction(fromPouchAddr, to, amount, spending);
+    await wallet.broadcastTransaction(transaction);
     await TransactionService.spend(transactions);
     return transaction.hash;
   }
@@ -118,11 +116,11 @@ export class BlockchainService {
     if (undefined === contractAddress) {
       throw new Error(`Token [${tokenCode}] does not have a contract address.`);
     }
-    const transactions = await TransactionService.satisfy(from, tokenCode, walletType, amount);
-    const w = wallet.create(walletType);
-    const fromPouchAddr = await w.getAddress(fromAddr.index, fromAddr.accountIndex);
-    const transaction = await w.createTokenTransaction(contractAddress, fromPouchAddr, to, amount);
-    await w.broadcastTransaction(transaction);
+    const transactions = await TransactionService.satisfy(walletType, walletId, tokenCode, from, amount);
+    const wallet = w.create(walletType);
+    const fromPouchAddr = await wallet.getAddress(fromAddr.index, fromAddr.accountIndex);
+    const transaction = await wallet.createTokenTransaction(contractAddress, fromPouchAddr, to, amount);
+    await wallet.broadcastTransaction(transaction);
     await TransactionService.spend(transactions);
     return transaction.hash;
   }

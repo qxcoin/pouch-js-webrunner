@@ -1,7 +1,6 @@
 import { WalletTypes } from 'pouch';
 import dataSource from '@app/data-source.js';
 import { Transaction } from '@entities/transaction.js';
-import { walletId } from "@app/wallet.js";
 
 export class TransactionService {
 
@@ -15,7 +14,7 @@ export class TransactionService {
     return await repo.exist({ where: { to, hash } });
   }
 
-  public static async create(walletType: WalletTypes, from: string[], to: string, hash: string, data: string, currency: string, value: bigint, blockHeight?: number) {
+  public static async create(walletType: WalletTypes, walletId: string, from: string[], to: string, hash: string, data: string, currency: string, value: bigint, blockHeight?: number) {
     const repo = dataSource.getRepository(Transaction);
     const transaction = new Transaction();
     transaction.walletType = walletType;
@@ -32,7 +31,7 @@ export class TransactionService {
     return transaction;
   }
 
-  public static async findSpendable(addressHash: string, currency: string, walletType: WalletTypes) {
+  public static async findSpendable(walletType: WalletTypes, walletId: string, currency: string, addressHash: string) {
     const repo = dataSource.getRepository(Transaction);
     const transactions = await repo.findBy({ walletType, walletId, to: addressHash, currency, spent: false });
     return transactions;
@@ -41,8 +40,8 @@ export class TransactionService {
   /**
    * Find spendable transactions to satisfy the amount provided.
    */
-  public static async satisfy(addressHash: string, currency: string, walletType: WalletTypes, amount: bigint) {
-    const transactions = await this.findSpendable(addressHash, currency, walletType);
+  public static async satisfy(walletType: WalletTypes, walletId: string, currency: string, addressHash: string, amount: bigint) {
+    const transactions = await this.findSpendable(walletType, walletId, currency, addressHash);
     // let's sort transactions from the ones that have smallest value to bigger values
     // so we first spend smaller transactions
     // this will help us to have fewer inputs and smaller TX size next time

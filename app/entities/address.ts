@@ -1,4 +1,5 @@
 import { Entity, PrimaryGeneratedColumn, Column } from "typeorm";
+import { WalletTypes } from 'pouch';
 
 @Entity('addresses')
 export class Address {
@@ -6,7 +7,7 @@ export class Address {
   id: string;
 
   @Column('varchar', { name: 'wallet_type' })
-  walletType: string;
+  walletType: WalletTypes;
 
   @Column('varchar', { name: 'wallet_id' })
   walletId: string;

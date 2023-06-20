@@ -5,10 +5,11 @@ import { wallets as walletsConfig } from '@app/config.js';
 import { walletId } from '@app/wallet.js';
 
 const querystringSchema = yup.object({
-  walletType: yup.mixed<keyof typeof walletsConfig>().oneOf(Object.keys(walletsConfig) as Array<keyof typeof walletsConfig>).required(),
-  walletId: yup.string().required().oneOf([walletId]),
-  currency: yup.string().required(),
-  addressHash: yup.string().required(),
+  walletType: yup.mixed<keyof typeof walletsConfig>().oneOf(Object.keys(walletsConfig) as Array<keyof typeof walletsConfig>),
+  walletId: yup.string().oneOf([walletId]),
+  currency: yup.string(),
+  addressHash: yup.string(),
+  spent: yup.string().matches(/^0|1$/),
 });
 
 export interface SchemaType extends RouteGenericInterface {

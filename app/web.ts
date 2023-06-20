@@ -10,11 +10,16 @@ import {
   SchemaType as AddressBalanceRetrievalSchemaType,
 } from '@schemas/address-balance-retrieval.schema.js';
 import {
+  schema as transactionRetrievalSchema,
+  SchemaType as TransactionRetrievalSchema,
+} from '@schemas/transactions-retrieval.schema.js';
+import {
   schema as transferSchema,
   SchemaType as TransferSchemaType,
 } from '@schemas/transfer.schema.js';
 import { BlockchainService } from './services/blockchain.service.js';
 import { walletId } from "./wallet.js";
+import { TransactionService } from './services/transaction.service.js';
 
 const fastify = Fastify({
   logger,
@@ -44,6 +49,20 @@ fastify.post<TransferSchemaType>(
   { schema: transferSchema },
   async (req, reply) => {
     return await BlockchainService.transfer(req.body.walletType, req.body.currency, req.body.from, req.body.to, BigInt(req.body.amount));
+  }
+);
+
+fastify.get<TransactionRetrievalSchema>(
+  '/transactions',
+  { schema: transactionRetrievalSchema },
+  async (req, reply) => {
+    return await TransactionService.find({
+      walletType: req.query.walletType,
+      walletId: req.query.walletId,
+      currency: req.query.currency,
+      to: req.query.addressHash,
+      spent: undefined === req.query.spent ? undefined : Boolean(Number(req.query.spent)),
+    });
   }
 );
 

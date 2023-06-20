@@ -6,7 +6,7 @@ import { walletId } from '@app/wallet.js';
 
 const querystringSchema = yup.object({
   walletType: yup.mixed<keyof typeof walletsConfig>().oneOf(Object.keys(walletsConfig) as Array<keyof typeof walletsConfig>).required(),
-  walletId: yup.string().required().equals([walletId]),
+  walletId: yup.string().required().oneOf([walletId]),
   groupId: yup.string().required(),
   fresh: yup.string().matches(/^0|1$/),
 });

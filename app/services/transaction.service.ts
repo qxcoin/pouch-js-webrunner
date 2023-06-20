@@ -4,7 +4,7 @@ import { Transaction } from '@entities/transaction.js';
 
 export class TransactionService {
 
-  public static async find(to: string, hash: string) {
+  public static async get(to: string, hash: string) {
     const repo = dataSource.getRepository(Transaction);
     return await repo.findOne({ where: { to, hash } });
   }
@@ -31,9 +31,9 @@ export class TransactionService {
     return transaction;
   }
 
-  public static async findSpendable(walletType: WalletTypes, walletId: string, currency: string, addressHash: string) {
+  public static async find(filters: Partial<{ walletType: WalletTypes, walletId: string, currency: string, to: string, hash: string, spent: boolean }>) {
     const repo = dataSource.getRepository(Transaction);
-    const transactions = await repo.findBy({ walletType, walletId, to: addressHash, currency, spent: false });
+    const transactions = await repo.findBy(filters);
     return transactions;
   }
 
@@ -41,7 +41,7 @@ export class TransactionService {
    * Find spendable transactions to satisfy the amount provided.
    */
   public static async satisfy(walletType: WalletTypes, walletId: string, currency: string, addressHash: string, amount: bigint) {
-    const transactions = await this.findSpendable(walletType, walletId, currency, addressHash);
+    const transactions = await this.find({ walletType, walletId, currency, to: addressHash, spent: false });
     // let's sort transactions from the ones that have smallest value to bigger values
     // so we first spend smaller transactions
     // this will help us to have fewer inputs and smaller TX size next time

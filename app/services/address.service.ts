@@ -48,9 +48,9 @@ export class AddressService {
   }
 
   /**
-   * Determines if we have an active address with provided hash in current wallet.
+   * Determines if the address is active in provided wallet.
    */
-  public static async hasActive(walletType: WalletTypes, walletId: string, hash: string): Promise<boolean> {
+  public static async isActive(walletType: WalletTypes, walletId: string, hash: string): Promise<boolean> {
     const addresses = await AddressService.getAllActive(walletType, walletId);
     for (const address of addresses) if (address.hash === hash) return true;
     return false;
@@ -81,7 +81,7 @@ export class AddressService {
   public static async getBalance(walletType: WalletTypes, walletId: string, currency: string, addressHash: string): Promise<bigint> {
     // in order to get balance of an address we need to
     // find all unspent transactions of that address and summarize their value
-    const transactions = await TransactionService.findSpendable(walletType, walletId, currency, addressHash);
+    const transactions = await TransactionService.find({ walletType, walletId, currency, to: addressHash, spent: false });
     let sum = 0n;
     for (const t of transactions) sum += BigInt(t.value);
     return sum;

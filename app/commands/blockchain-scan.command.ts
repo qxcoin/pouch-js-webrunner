@@ -50,6 +50,8 @@ export class BlockchainScanCommand extends DaemonCommand {
   }
 
   public override async tick(walletType: WalletTypes) {
+    logger.info(`[${walletType}] Starting to check blocks...`);
+
     const startTime = performance.now();
 
     const wallet = w.create(walletType);
@@ -59,7 +61,7 @@ export class BlockchainScanCommand extends DaemonCommand {
     const cachedValue = await redis.get(cacheKey);
     const cachedHeight = null === cachedValue ? null : parseInt(cachedValue);
 
-    logger.info(`[${walletType}] Starting to check blocks... (Current Height: ${currentHeight}, Cached Height: ${cachedHeight})`);
+    logger.info(`[${walletType}] Current Height: ${currentHeight}, Cached Height: ${cachedHeight}`);
 
     // a fresh start from the pick
     let range: [number, number];
@@ -84,7 +86,7 @@ export class BlockchainScanCommand extends DaemonCommand {
     // NOTE: we try to read cache value again to make sure it is not manually changed by admin
     //       if it is changed, we shouldn't overwrite it
     if (cachedValue === (await redis.get(cacheKey))) {
-      await redis.set(cacheKey, range[1], { PX: (this.delay * 10) });
+      await redis.set(cacheKey, range[1], { PX: 60 * 60 * 1000 });
     }
 
     const totalTime = Math.floor((performance.now() - startTime) / 1000);

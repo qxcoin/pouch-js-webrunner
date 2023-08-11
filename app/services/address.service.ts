@@ -2,7 +2,7 @@ import { WalletTypes } from 'pouch';
 import dataSource from '@app/data-source.js';
 import { Address } from '@entities/address.js';
 import w from "@app/wallet.js";
-import { TransactionService } from './transaction.service';
+import { TransactionService } from './transaction.service.js';
 
 export class AddressService {
 

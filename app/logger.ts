@@ -1,15 +1,14 @@
-import pino, { Logger } from 'pino';
+import pino from 'pino';
+import path from 'path';
 
 const transport = {
   targets: [
-    { target: 'pino/file', level: 'debug', options: { destination: `./storage/logs/${new Date().toISOString().slice(0, 10)}.log` } },
+    { target: path.resolve('dist/utils/rotating-file-transport.js'), level: 'debug', options: { destination: './storage/logs/app.log', interval: '1m' } },
     { target: 'pino-pretty', level: 'debug', options: { translateTime: 'HH:MM:ss Z', ignore: 'pid,hostname' } }
   ],
 };
 
-const logger: Logger = pino({
+export default pino({
   transport,
   level: process.env['NODE_ENV'] === 'development' ? 'debug' : 'info',
 });
-
-export default logger;

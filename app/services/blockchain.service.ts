@@ -52,10 +52,9 @@ export class BlockchainService {
       const oldTx = await TransactionService.get(out.address.hash, transaction.hash);
       if (oldTx) {
         if (blockHeight && !oldTx.blockHeight) await TransactionService.confirm(oldTx, blockHeight);
-        continue;
+      } else {
+        TransactionService.create(walletType, out.address.walletId, inputAddressHashes, out.address.hash, transaction.hash, transaction.data, walletsConfig[walletType].coin, out.value, blockHeight);
       }
-      const currency = walletsConfig[walletType].coin;
-      TransactionService.create(walletType, out.address.walletId, inputAddressHashes, out.address.hash, transaction.hash, transaction.data, currency, out.value, blockHeight);
     }
   }
 
@@ -68,8 +67,7 @@ export class BlockchainService {
     // if transaction already exists, don't insert it again, and if possible confirm it
     const oldTx = await TransactionService.get(transaction.to, transaction.hash);
     if (oldTx) {
-      if (blockHeight && !oldTx.blockHeight)
-        await TransactionService.confirm(oldTx, blockHeight);
+      if (blockHeight && !oldTx.blockHeight) await TransactionService.confirm(oldTx, blockHeight);
       return;
     }
     // if we don't have any token associated to the contract address, do nothing

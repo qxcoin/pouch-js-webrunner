@@ -3,7 +3,7 @@ import path from 'path';
 
 const transport = {
   targets: [
-    { target: path.resolve('dist/utils/rotating-file-transport.js'), level: 'debug', options: { destination: './storage/logs/app.log', interval: '1m' } },
+    { target: path.resolve('dist/utils/rotating-file-transport.js'), level: 'debug', options: { destination: './storage/logs/app.log', interval: '1d' } },
     { target: 'pino-pretty', level: 'debug', options: { translateTime: 'HH:MM:ss Z', ignore: 'pid,hostname' } }
   ],
 };

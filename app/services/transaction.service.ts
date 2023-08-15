@@ -1,6 +1,7 @@
 import { WalletTypes } from 'pouch';
 import dataSource from '@app/data-source.js';
 import { Transaction } from '@entities/transaction.js';
+import logger from '@app/logger.js';
 
 export class TransactionService {
 
@@ -86,8 +87,11 @@ export class TransactionService {
    * TODO: maybe later we move this function to queued jobs using events
    */
   private static async reportTransaction(transaction: Transaction) {
-    const credentials = Buffer.from(process.env['AUDIENCE_API_KEY']!).toString('base64');
-    fetch(process.env['AUDIENCE_ENDPOINT']!, {
+    const endpoint = process.env['AUDIENCE_ENDPOINT']!;
+    const secret = process.env['AUDIENCE_SECRET']!;
+    logger.info({ endpoint, secret, transaction }, 'Reporting transaction...');
+    const credentials = Buffer.from(secret).toString('base64');
+    fetch(endpoint, {
       method: 'POST',
       headers: { 'Accept': 'application/json', 'Content-Type': 'application/json', 'Authorization': `Basic ${credentials}` },
       body: JSON.stringify(transaction),

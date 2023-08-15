@@ -9,12 +9,12 @@ await redis.connect();
 await dataSource.initialize();
 
 process.on('uncaughtException', (err, origin) => {
-  logger.error(err, err.message);
+  logger.error(err);
   process.exit(1);
 });
 
 process.on('unhandledRejection', (reason, promise) => {
-  logger.error(reason, 'Unhandled Rejection.', promise);
+  logger.error(reason, 'Unhandled Rejection.');
   process.exit(1);
 });
 

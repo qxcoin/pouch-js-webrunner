@@ -62,12 +62,12 @@ export class BlockchainMempoolScanCommand extends DaemonCommand {
       }
     }
 
+    // let's remember the mempool so we won't need to check same mempool again
+    await redis.set(cacheKey, JSON.stringify(mempool.transactionHashes), { PX: 1 * 60 * 1000 });
+
     const promises: Promise<void>[] = [];
     for (const hash of transactionHashes) promises.push(checkTransaction(hash));
     await Promise.all(promises);
-
-    // let's remember the mempool so we won't need to check same mempool again
-    await redis.set(cacheKey, JSON.stringify(mempool.transactionHashes), { PX: 1 * 60 * 1000 });
 
     const totalTime = Math.floor((performance.now() - startTime) / 1000);
     logger.info(`[${walletType}] Checked mempool in ${totalTime} second(s).`);

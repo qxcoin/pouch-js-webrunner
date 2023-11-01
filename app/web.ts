@@ -1,6 +1,6 @@
 import Fastify from 'fastify';
 import { AddressService } from "@services/address.service.js";
-import logger from './logger.js';
+import logger from '@app/logger.js';
 import {
   schema as addressRetrievalSchema,
   SchemaType as AddressRetrievalSchemaType,
@@ -17,9 +17,10 @@ import {
   schema as transferSchema,
   SchemaType as TransferSchemaType,
 } from '@schemas/transfer.schema.js';
-import { BlockchainService } from './services/blockchain.service.js';
-import { walletId } from "./wallet.js";
-import { TransactionService } from './services/transaction.service.js';
+import { BlockchainService } from '@services/blockchain.service.js';
+import { walletId } from "@app/wallet.js";
+import { TransactionService } from '@services/transaction.service.js';
+import { networks } from '@app/config.js';
 
 const fastify = Fastify({
   logger,
@@ -70,6 +71,13 @@ fastify.get(
   '/wallet/id',
   async (req, reply) => {
     return reply.send(walletId);
+  }
+);
+
+fastify.get(
+  '/wallet/networks',
+  async (req, reply) => {
+    return Object.values(networks);
   }
 );
 

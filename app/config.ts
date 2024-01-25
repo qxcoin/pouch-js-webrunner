@@ -5,11 +5,11 @@ export const port = 3000;
 type CoinCode = string;
 type TokenCode = string;
 type ContractAddress = string;
-type CoinConfig = { code: CoinCode, name: string, decimals: number };
-type TokenConfig = { code: TokenCode, name: string, decimals: number, standard: string, stable: boolean, contractAddress: ContractAddress };
+type CoinConfig = { code: CoinCode, label: string, decimals: number };
+type TokenConfig = { code: TokenCode, label: string, decimals: number, standard: string, stable: boolean, contractAddress: ContractAddress };
 type NetworkConfig = {
-  code: string,
   name: string,
+  label: string,
   coin: CoinConfig,
   tokens: TokenConfig[],
   requiredConfirmations: number,
@@ -18,30 +18,30 @@ type WalletConfig<WalletName extends keyof PouchWalletConfigs> = PouchWalletConf
   blockTime: number,
 };
 
-const bitcoin = { code: 'BTC', name: 'Bitcoin', decimals: 8 };
-const monero = { code: 'XMR', name: 'Monero', decimals: 12 };
-const tron = { code: 'TRX', name: 'TRON', decimals: 6 };
-const ethereum = { code: 'ETH', name: 'Ethereum', decimals: 18 };
-const binanceCoin = { code: 'BNB', name: 'Binance Coin', decimals: 18 };
-const tether = { code: 'USDT', name: 'Tether', decimals: 6, stable: true };
+const bitcoin = { code: 'BTC', label: 'Bitcoin', decimals: 8 };
+const monero = { code: 'XMR', label: 'Monero', decimals: 12 };
+const tron = { code: 'TRX', label: 'TRON', decimals: 6 };
+const ethereum = { code: 'ETH', label: 'Ethereum', decimals: 18 };
+const binanceCoin = { code: 'BNB', label: 'Binance Coin', decimals: 18 };
+const tether = { code: 'USDT', label: 'Tether', decimals: 6, stable: true };
 
 const bitcoinNetwork: NetworkConfig = {
-  code: 'BTC',
-  name: 'Bitcoin',
+  name: 'bitcoin',
+  label: 'Bitcoin',
   coin: bitcoin,
   tokens: [],
   requiredConfirmations: 1,
 }
 const moneroNetwork: NetworkConfig = {
-  code: 'XMR',
-  name: 'Monero',
+  name: 'monero',
+  label: 'Monero',
   coin: monero,
   tokens: [],
   requiredConfirmations: 10,
 }
 const tronNetwork: NetworkConfig = {
-  code: 'TRX',
-  name: 'TRON',
+  name: 'tron',
+  label: 'TRON',
   coin: tron,
   tokens: [
     { ...tether, standard: 'TRC-20', contractAddress: 'TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t' },
@@ -49,15 +49,15 @@ const tronNetwork: NetworkConfig = {
   requiredConfirmations: 1,
 }
 const ethereumNetwork: NetworkConfig = {
-  code: 'ETH',
-  name: 'Ethereum',
+  name: 'ethereum',
+  label: 'Ethereum',
   coin: ethereum,
   tokens: [],
   requiredConfirmations: 1,
 }
 const bscNetwork: NetworkConfig = {
-  code: 'BSC',
-  name: 'Binance Smart Chain',
+  name: 'bsc',
+  label: 'Binance Smart Chain',
   coin: binanceCoin,
   tokens: [],
   requiredConfirmations: 1,

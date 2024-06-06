@@ -9,29 +9,37 @@ import { TransactionService } from './transaction.service.js';
 import w, { walletId } from '@app/wallet.js';
 import { wallets as walletsConfig } from '@app/config.js';
 import { Address } from '@app/entities/address.js';
+import { Transaction } from '@app/entities/transaction.js';
 
 export class BlockchainService {
 
-  public static async checkBlocks(walletType: WalletTypes, from: number, to: number): Promise<void> {
+  public static async checkBlocks(walletType: WalletTypes, from: number, to: number): Promise<Transaction[]> {
     const wallet = w.create(walletType);
     const blocks = await wallet.getBlocks(from, to);
+    const transactions = [];
     for (const block of blocks) {
-      for (const transaction of block.transactions) {
-        await this.handleTransaction(walletType, transaction, block.height);
+      for (const walletTransaction of block.transactions) {
+        transactions.push(...await this.handleTransaction(walletType, walletTransaction, block.height));
       }
+    }
+    return transactions;
+  }
+
+  public static async handleTransaction(walletType: WalletTypes, walletTransaction: CoinTransaction | TokenTransaction, blockHeight?: number): Promise<Transaction[]> {
+    if (walletTransaction instanceof TokenTransaction) {
+      const tx = await this.handleTokenTransaction(walletType, walletTransaction, blockHeight);
+      if (tx) return [tx];
+      else return [];
+    } else if (walletTransaction instanceof CoinTransaction) {
+      return await this.handleCoinTransaction(walletType, walletTransaction, blockHeight);
+    } else {
+      return [];
     }
   }
 
-  public static async handleTransaction(walletType: WalletTypes, transaction: CoinTransaction | TokenTransaction, blockHeight?: number) {
-    if (transaction instanceof TokenTransaction)
-      return this.handleTokenTransaction(walletType, transaction, blockHeight);
-    else if (transaction instanceof CoinTransaction)
-      return this.handleCoinTransaction(walletType, transaction, blockHeight);
-  }
-
-  private static async handleCoinTransaction(walletType: WalletTypes, transaction: CoinTransaction, blockHeight?: number) {
+  private static async handleCoinTransaction(walletType: WalletTypes, walletTransaction: CoinTransaction, blockHeight?: number): Promise<Transaction[]> {
     const outputs: { address: Address, value: bigint }[] = [];
-    for (const out of transaction.outputs) {
+    for (const out of walletTransaction.outputs) {
       const addressHash = await out.address();
       const address = await AddressService.get(addressHash);
       if (address) {
@@ -41,41 +49,62 @@ export class BlockchainService {
     }
     // if we have not found any output related to us, we do nothing
     if (!outputs.length) {
-      return;
+      return [];
     }
     const inputAddressHashes: string[] = [];
-    for (const inp of transaction.inputs) {
+    for (const inp of walletTransaction.inputs) {
       const addressHash = await inp.address();
       inputAddressHashes.push(addressHash);
     }
+    const transactions = [];
     for (const out of outputs) {
-      const oldTx = await TransactionService.get(out.address.hash, transaction.hash);
+      // if we already have transaction in database, we don't need to insert it again
+      // we just check if the block height exists this time (which means transaction is not from mempool)
+      // then we just confirm the transaction, otherwise we do nothing
+      const oldTx = await TransactionService.get(out.address.hash, walletTransaction.hash);
       if (oldTx) {
-        if (blockHeight && !oldTx.blockHeight) await TransactionService.confirm(oldTx, blockHeight);
-      } else {
-        TransactionService.create(walletType, out.address.walletId, inputAddressHashes, out.address.hash, transaction.hash, transaction.data, walletsConfig[walletType].coin.code, out.value, blockHeight);
+        if (blockHeight && !oldTx.blockHeight) {
+          await TransactionService.confirm(oldTx, blockHeight);
+          transactions.push(oldTx);
+        }
+      }
+      // if the transaction doesn't exist, we add transaction to database
+      else {
+        const tx = await TransactionService.create(walletType, out.address.walletId, inputAddressHashes, out.address.hash, walletTransaction.hash, walletTransaction.data, walletsConfig[walletType].coin.code, out.value, blockHeight);
+        transactions.push(tx);
       }
     }
+    return transactions;
   }
 
-  private static async handleTokenTransaction(walletType: WalletTypes, transaction: TokenTransaction, blockHeight?: number) {
+  private static async handleTokenTransaction(walletType: WalletTypes, walletTransaction: TokenTransaction, blockHeight?: number): Promise<Transaction | undefined> {
     // if the transaction is not sending money to us, we have nothing to do with it
-    const address = await AddressService.get(transaction.from);
+    const address = await AddressService.get(walletTransaction.from);
     if (!address) return;
-    const active = await AddressService.isActive(address.walletType, address.walletId, transaction.from);
+    const active = await AddressService.isActive(address.walletType, address.walletId, walletTransaction.from);
     if (!active) return;
     // if transaction already exists, don't insert it again, and if possible confirm it
-    const oldTx = await TransactionService.get(transaction.to, transaction.hash);
+    const oldTx = await TransactionService.get(walletTransaction.to, walletTransaction.hash);
     if (oldTx) {
       if (blockHeight && !oldTx.blockHeight) await TransactionService.confirm(oldTx, blockHeight);
       return;
     }
     // if we don't have any token associated to the contract address, do nothing
-    const currency = walletsConfig[walletType].tokens.find(c => c.contractAddress === transaction.contractAddress);
+    const currency = walletsConfig[walletType].tokens.find(c => c.contractAddress === walletTransaction.contractAddress);
     if (undefined === currency) {
       return;
     }
-    TransactionService.create(walletType, address.walletId, [transaction.from], transaction.to, transaction.hash, transaction.data, currency.code, transaction.value, blockHeight);
+    return await TransactionService.create(
+      walletType,
+      address.walletId,
+      [walletTransaction.from],
+      walletTransaction.to,
+      walletTransaction.hash,
+      walletTransaction.data,
+      currency.code,
+      walletTransaction.value,
+      blockHeight,
+    );
   }
 
   public static transfer(walletType: WalletTypes, currency: string, from: string, to: string, amount: bigint): Promise<string> {

@@ -1,11 +1,9 @@
 import 'dotenv/config';
 import dataSource from '@app/data-source.js';
 import program from '@app/cli.js';
-import redis from '@app/redis.js';
 import process from 'process';
 import logger from '@app/logger.js';
 
-await redis.connect();
 await dataSource.initialize();
 
 process.on('uncaughtException', (err, origin) => {

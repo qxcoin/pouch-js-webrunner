@@ -90,13 +90,11 @@ const tronWallet: WalletConfig<'tron'> = {
 }
 const ethereumWallet: WalletConfig<'ethereum'> = {
   provider: process.env['ETHEREUM_PROVIDER']!,
-  contracts: {},
   blockTime: 12 * 1000,
   ...networks['ethereum'],
 }
 const bscWallet: WalletConfig<'bsc'> = {
   provider: process.env['BSC_PROVIDER']!,
-  contracts: {},
   blockTime: 3 * 1000,
   ...networks['bsc'],
 }

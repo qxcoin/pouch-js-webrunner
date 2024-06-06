@@ -40,7 +40,7 @@ export class AddressService {
     sq.select('MAX(subAddress.id)');
     sq.from(Address, 'subAddress');
     sq.where('subAddress.wallet_type = :walletType', { walletType });
-    sq.where('subAddress.wallet_id = :walletId', { walletId });
+    sq.andWhere('subAddress.wallet_id = :walletId', { walletId });
     sq.groupBy('subAddress.group_id');
     qb.where('address.id IN ' + sq.getQuery());
     qb.cache(2 * 60 * 1000);

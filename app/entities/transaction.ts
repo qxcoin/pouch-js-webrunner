@@ -30,8 +30,8 @@ export class Transaction {
   @Column('varchar')
   currency: string;
 
-  @Column('int', { name: 'block_height' })
-  blockHeight?: number;
+  @Column('int', { name: 'block_height', nullable: true })
+  blockHeight?: number | null;
 
   @Column('boolean')
   spent: boolean = false;

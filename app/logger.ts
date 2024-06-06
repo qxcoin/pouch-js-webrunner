@@ -1,9 +1,9 @@
 import pino from 'pino';
-import path from 'path';
+import { resolve } from 'node:path';
 
 const transport = {
   targets: [
-    { target: path.resolve('dist/utils/rotating-file-transport.js'), level: 'debug', options: { destination: './storage/logs/app.log', interval: '1d' } },
+    { target: resolve('dist/utils/rotating-file-transport.js'), level: 'debug', options: { destination: resolve('storage/logs/app.log'), interval: '1d' } },
     { target: 'pino-pretty', level: 'debug', options: { translateTime: 'HH:MM:ss Z', ignore: 'pid,hostname' } }
   ],
 };

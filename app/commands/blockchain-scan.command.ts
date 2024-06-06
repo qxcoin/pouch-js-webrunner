@@ -6,13 +6,14 @@ import redis from "@app/redis.js";
 import { wallets as walletsConfig } from "@app/config.js";
 import { DaemonCommand } from "./daemon.command.js";
 import { BlockchainService } from "@app/services/blockchain.service.js";
+import { TransactionService } from "@app/services/transaction.service.js";
 
 export class BlockchainScanCommand extends DaemonCommand {
 
   public build(): Command {
     const program = new Command();
     program.name('blockchain:scan');
-    program.argument('<wallet>');
+    program.argument('<wallet type>');
     program.option('--from <block height>');
     program.option('--to <block height>');
     program.action(this.run.bind(this));
@@ -80,13 +81,16 @@ export class BlockchainScanCommand extends DaemonCommand {
 
     logger.info(`[${walletType}] Checking block(s) ${range[0]}-${range[1]}...`);
 
-    await BlockchainService.checkBlocks(walletType, range[0], range[1]);
+    const transactions = await BlockchainService.checkBlocks(walletType, range[0], range[1]);
+
+    // if we found any transactions, we need to report them to audience
+    await TransactionService.reportTransactions(transactions);
 
     // at the end, we should cache the height
     // NOTE: we try to read cache value again to make sure it is not manually changed by admin
     //       if it is changed, we shouldn't overwrite it
     if (cachedValue === (await redis.get(cacheKey))) {
-      await redis.set(cacheKey, range[1], { PX: 60 * 60 * 1000 });
+      await redis.set(cacheKey, range[1], 'PX', 60 * 60 * 1000);
     }
 
     const totalTime = Math.floor((performance.now() - startTime) / 1000);

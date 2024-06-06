@@ -1,6 +1,7 @@
 import { WalletTypes } from 'pouch';
 import dataSource from '@app/data-source.js';
 import { Transaction } from '@entities/transaction.js';
+import { ReportTransactionJob } from '@app/jobs/report-transaction.job.js';
 import logger from '@app/logger.js';
 
 export class TransactionService {
@@ -12,7 +13,7 @@ export class TransactionService {
 
   public static async has(to: string, hash: string) {
     const repo = dataSource.getRepository(Transaction);
-    return await repo.exist({ where: { to, hash } });
+    return await repo.exists({ where: { to, hash } });
   }
 
   public static async create(walletType: WalletTypes, walletId: string, from: string[], to: string, hash: string, data: string, currency: string, value: bigint, blockHeight?: number) {
@@ -28,7 +29,6 @@ export class TransactionService {
     transaction.currency = currency;
     transaction.blockHeight = blockHeight;
     await repo.save(transaction);
-    this.reportTransaction(transaction);
     return transaction;
   }
 
@@ -70,7 +70,6 @@ export class TransactionService {
     const repo = dataSource.getRepository(Transaction);
     transaction.blockHeight = blockHeight;
     await repo.save(transaction);
-    this.reportTransaction(transaction);
   }
 
   public static async spend(transactions: Transaction | Transaction[]) {
@@ -82,19 +81,20 @@ export class TransactionService {
     });
   }
 
+  public static async reportTransactions(transactions: Transaction[]) {
+    for (const transaction of transactions) {
+      await this.reportTransaction(transaction);
+    }
+  }
+
   /**
    * Report the transaction to the audience.
-   * TODO: maybe later we move this function to queued jobs using events
    */
-  private static async reportTransaction(transaction: Transaction) {
-    const endpoint = process.env['AUDIENCE_ENDPOINT']!;
-    const secret = process.env['AUDIENCE_SECRET']!;
-    logger.info({ endpoint, secret, transaction }, 'Reporting transaction...');
-    const credentials = Buffer.from(secret).toString('base64');
-    fetch(endpoint, {
-      method: 'POST',
-      headers: { 'Accept': 'application/json', 'Content-Type': 'application/json', 'Authorization': `Basic ${credentials}` },
-      body: JSON.stringify(transaction),
+  public static async reportTransaction(transaction: Transaction) {
+    logger.info({ transaction }, 'Reporting transaction...');
+    await (new ReportTransactionJob).dispatch({ transaction }, {
+      attempts: 32,
+      backoff: { type: 'exponential', delay: 4000 },
     });
   }
 

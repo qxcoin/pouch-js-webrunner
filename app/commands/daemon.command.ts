@@ -14,7 +14,7 @@ export class DaemonCommand {
   }
 
   public async tick(...args: any[]) {
-    console.time('tick');
+    console.log('tick');
   }
 
 }

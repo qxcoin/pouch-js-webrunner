@@ -6,10 +6,11 @@ import redis from "@app/redis.js";
 import { DaemonCommand } from "./daemon.command.js";
 import { arrayDiff } from "@utils/helpers.js";
 import { BlockchainService } from "@app/services/blockchain.service.js";
+import { TransactionService } from "@app/services/transaction.service.js";
 
 export class BlockchainMempoolScanCommand extends DaemonCommand {
 
-  public override delay: number = 16 * 1000;
+  public override delay: number = 1 * 1000;
 
   public build(): Command {
     const program = new Command();
@@ -55,15 +56,16 @@ export class BlockchainMempoolScanCommand extends DaemonCommand {
 
     const checkTransaction = async (hash: string): Promise<void> => {
       try {
-        const transaction = await wallet.getTransaction(hash);
-        await BlockchainService.handleTransaction(walletType, transaction);
+        const walletTransaction = await wallet.getTransaction(hash);
+        const transactions = await BlockchainService.handleTransaction(walletType, walletTransaction);
+        await TransactionService.reportTransactions(transactions);
       } catch {
         // we don't want any error
       }
-    }
+    };
 
     // let's remember the mempool so we won't need to check same mempool again
-    await redis.set(cacheKey, JSON.stringify(mempool.transactionHashes), { PX: 1 * 60 * 1000 });
+    await redis.set(cacheKey, JSON.stringify(mempool.transactionHashes), 'PX', 1 * 60 * 1000);
 
     const promises: Promise<void>[] = [];
     for (const hash of transactionHashes) promises.push(checkTransaction(hash));

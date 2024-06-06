@@ -17,6 +17,10 @@ import {
   schema as transferSchema,
   SchemaType as TransferSchemaType,
 } from '@schemas/transfer.schema.js';
+import {
+  schema as scanSchema,
+  SchemaType as ScanSchemaType,
+} from '@schemas/scan.schema.js';
 import { BlockchainService } from '@services/blockchain.service.js';
 import { walletId } from "@app/wallet.js";
 import { TransactionService } from '@services/transaction.service.js';
@@ -67,6 +71,15 @@ fastify.get<TransactionRetrievalSchema>(
   }
 );
 
+fastify.post<ScanSchemaType>(
+  '/scan',
+  { schema: scanSchema },
+  async (req, reply) => {
+    const transactions = BlockchainService.checkBlocks(req.body.walletType, req.body.from, req.body.to);
+    return transactions;
+  }
+);
+
 fastify.get(
   '/wallet/id',
   async (req, reply) => {
@@ -88,6 +101,7 @@ fastify.all(
   }
 );
 
+// test audience
 fastify.all(
   '/audience',
   async (req, reply) => {

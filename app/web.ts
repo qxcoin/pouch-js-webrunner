@@ -75,7 +75,8 @@ fastify.post<ScanSchemaType>(
   '/scan',
   { schema: scanSchema },
   async (req, reply) => {
-    const transactions = BlockchainService.checkBlocks(req.body.walletType, req.body.from, req.body.to);
+    const transactions = await BlockchainService.checkBlocks(req.body.walletType, req.body.from, req.body.to);
+    await TransactionService.reportTransactions(transactions);
     return transactions;
   }
 );
@@ -105,8 +106,8 @@ fastify.all(
 fastify.all(
   '/audience',
   async (req, reply) => {
-    logger.debug({ body: req.body }, 'Received a request.');
-    return reply.send(200);
+    logger.debug({ body: req.body }, 'Received a transaction.');
+    return reply.status(200).send();
   }
 );
 

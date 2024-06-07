@@ -25,6 +25,7 @@ export class ReportTransactionJob extends Job<DataType> {
     // if we didn't receive a successful response from the audience
     // we should fail the job so it will retry
     if (!res.ok) {
+      logger.debug({ body: await res.text() }, 'Failed to get a successful response from the audience.');
       throw new Error('Failed to get a successful response from the audience.');
     }
   }

@@ -91,9 +91,8 @@ export class TransactionService {
    * Report the transaction to the audience.
    */
   public static async reportTransaction(transaction: Transaction) {
-    logger.info({ transaction }, 'Reporting transaction...');
     await (new ReportTransactionJob).dispatch({ transaction }, {
-      attempts: 32,
+      attempts: 8,
       backoff: { type: 'exponential', delay: 4000 },
     });
   }

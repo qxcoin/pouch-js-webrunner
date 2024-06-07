@@ -15,7 +15,7 @@ async function processor(job: Job) {
 
   switch (job.name) {
     case ReportTransactionJob.name:
-      (new ReportTransactionJob()).execute(job);
+      await (new ReportTransactionJob()).execute(job);
       break;
   }
 }

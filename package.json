@@ -4,7 +4,7 @@
   "type": "module",
   "main": "dist/index.js",
   "scripts": {
-    "clear": "rm -r dist",
+    "clear": "rm -rf dist",
     "build": "tsc && tsc-alias",
     "watch": "NODE_ENV=development tsx watch --clear-screen=false app/index.ts",
     "dev": "NODE_ENV=development tsx app/index.ts",

@@ -7,7 +7,7 @@ const logstashTransport = {
   options: {
     address: process.env['LOGSTASH_HOST'],
     port: process.env['LOGSTASH_PORT'],
-    mode: process.env['LOGSTASH_MODE'],
+    mode: 'tcp',
   }
 };
 

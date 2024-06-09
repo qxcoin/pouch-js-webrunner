@@ -10,7 +10,7 @@ import { TransactionService } from "@app/services/transaction.service.js";
 
 export class BlockchainMempoolScanCommand extends DaemonCommand {
 
-  public override delay: number = 1 * 1000;
+  public override delay: number = 16 * 1000;
 
   public build(): Command {
     const program = new Command();

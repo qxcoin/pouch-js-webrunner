@@ -6,9 +6,9 @@
   "scripts": {
     "clear": "rm -rf dist",
     "build": "tsc && tsc-alias",
-    "watch": "NODE_ENV=development tsx watch --clear-screen=false app/index.ts",
-    "dev": "NODE_ENV=development tsx app/index.ts",
-    "prod": "NODE_ENV=production node dist/index.js",
+    "watch": "tsx watch --clear-screen=false app/index.ts",
+    "dev": "tsx app/index.ts",
+    "prod": "node dist/index.js",
     "start": "./start.sh"
   },
   "dependencies": {
@@ -21,6 +21,7 @@
     "mysql": "^2.18.1",
     "pino": "^8.21.0",
     "pino-pretty": "^10.0.0",
+    "pino-socket": "^7.3.0",
     "pouch": "github:qxcoin/pouch-js",
     "rotating-file-stream": "^3.2.1",
     "typeorm": "^0.3.20",

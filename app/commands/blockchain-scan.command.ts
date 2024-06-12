@@ -62,12 +62,12 @@ export class BlockchainScanCommand extends DaemonCommand {
     const wallet = w.create(walletType);
 
     const currentHeight = await wallet.getLastBlockHeight();
-    this.logger(walletType).info({ currentHeight });
+    this.logger(walletType).info({ currentHeight }, 'Current blockchain height.');
 
     const cacheKey = `${walletType}_block_height`;
     const cachedValue = await redis.get(cacheKey);
     const cachedHeight = null === cachedValue ? null : parseInt(cachedValue);
-    this.logger(walletType).info({ cachedHeight });
+    this.logger(walletType).info({ cachedHeight }, 'Current cached height.');
 
     // a fresh start from the pick
     let range: [number, number];

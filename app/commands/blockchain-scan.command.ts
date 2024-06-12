@@ -50,20 +50,24 @@ export class BlockchainScanCommand extends DaemonCommand {
     await super.run(walletType);
   }
 
+  private logger(walletType: WalletTypes) {
+    return logger.child({ command: BlockchainScanCommand.name, walletType });
+  }
+
   public override async tick(walletType: WalletTypes) {
-    logger.info({ walletType }, `[${walletType}] Starting to check blocks...`);
+    this.logger(walletType).info('Starting to check blocks...');
 
     const startTime = performance.now();
 
     const wallet = w.create(walletType);
 
     const currentHeight = await wallet.getLastBlockHeight();
-    logger.info({ walletType, currentHeight }, `[${walletType}] Current Height: ${currentHeight}`);
+    this.logger(walletType).info({ currentHeight });
 
     const cacheKey = `${walletType}_block_height`;
     const cachedValue = await redis.get(cacheKey);
     const cachedHeight = null === cachedValue ? null : parseInt(cachedValue);
-    logger.info({ walletType, cachedHeight }, `[${walletType}] Cached Height: ${cachedHeight}`);
+    this.logger(walletType).info({ cachedHeight });
 
     // a fresh start from the pick
     let range: [number, number];
@@ -72,7 +76,7 @@ export class BlockchainScanCommand extends DaemonCommand {
     }
     // we already checked this block
     else if (currentHeight <= cachedHeight) {
-      logger.info({ walletType }, `[${walletType}] Blocks till height ${currentHeight} are already checked.`);
+      this.logger(walletType).info({ currentHeight, cachedHeight }, 'Block(s) are already checked.');
       return;
     }
     // continue from where we left
@@ -80,7 +84,7 @@ export class BlockchainScanCommand extends DaemonCommand {
       range = [(cachedHeight + 1), currentHeight];
     }
 
-    logger.info({ walletType, range }, `[${walletType}] Checking block(s) ${range[0]}-${range[1]}...`);
+    this.logger(walletType).info({ from: range[0], to: range[1] }, 'Checking block(s)...');
 
     const transactions = await BlockchainService.checkBlocks(walletType, range[0], range[1]);
 
@@ -95,7 +99,7 @@ export class BlockchainScanCommand extends DaemonCommand {
     }
 
     const totalTime = Math.floor((performance.now() - startTime) / 1000);
-    logger.info({ walletType, totalTime, range }, `[${walletType}] Checked block(s) ${range[0]}-${range[1]} in ${totalTime} second(s).`);
+    this.logger(walletType).info({ totalTime, from: range[0], to: range[1] }, 'Checked block(s).');
   }
 
 }

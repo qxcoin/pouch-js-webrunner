@@ -20,23 +20,27 @@ export class BlockchainMempoolScanCommand extends DaemonCommand {
     return program;
   }
 
+  private logger(walletType: WalletTypes) {
+    return logger.child({ command: BlockchainMempoolScanCommand.name, walletType });
+  }
+
   public override async tick(walletType: WalletTypes) {
-    logger.info({ walletType }, `[${walletType}] Starting to check mempool...`);
+    this.logger(walletType).info('Starting to check mempool...');
 
     const startTime = performance.now();
 
     const wallet = w.create(walletType);
 
     const mempool = await wallet.getMempool();
-    logger.debug({ walletType }, `[${walletType}] Mempool download done.`);
+    this.logger(walletType).debug('Mempool download done.');
 
     const cacheKey = `${walletType}_mempool_transaction_hashes`;
     const cachedValue = await redis.get(cacheKey);
     const cachedTransactionHashes = null === cachedValue ? [] : JSON.parse(cachedValue);
-    logger.debug({ walletType }, `[${walletType}] Mempool cache parse done.`);
+    this.logger(walletType).debug('Mempool cache parse done.');
 
     if (!mempool.transactionHashes.length) {
-      logger.info({ walletType }, `[${walletType}] Mempool is empty.`);
+      this.logger(walletType).info('Mempool is empty.');
       return;
     }
 
@@ -46,13 +50,13 @@ export class BlockchainMempoolScanCommand extends DaemonCommand {
     // and then next time we continue checking new transactions
     let transactionHashes: string[] = [];
     if (!cachedTransactionHashes.length) {
-      logger.info({ walletType }, `[${walletType}] Mempool cache is empty, we will cache all ${mempool.transactionHashes.length} transaction.`);
+      this.logger(walletType).info({ nonCached: mempool.transactionHashes.length }, 'Mempool cache is empty, we will cache all transactions, and check nothing.');
       transactionHashes = []; // set no transactions to check
     }
     // if the cache is not empty, we simply check the new transactions
     else {
       transactionHashes = arrayDiff(mempool.transactionHashes, cachedTransactionHashes);
-      logger.info({ walletType }, `[${walletType}] Mempool has ${transactionHashes.length} transactions non-cached out of ${mempool.transactionHashes.length}.`);
+      this.logger(walletType).info({ nonCached: transactionHashes.length, total: mempool.transactionHashes.length }, 'Mempool has some transactions non-cached we will check them.');
     }
 
     const checkTransaction = async (hash: string): Promise<void> => {
@@ -62,10 +66,12 @@ export class BlockchainMempoolScanCommand extends DaemonCommand {
         await TransactionService.reportTransactions(transactions);
       } catch {
         // we don't want any error
+        // there may be some transactions not supported by us inside blockchain
+        // in case of any error, we should ignore it and proceed to other transactions
       }
     };
 
-    // let's remember the mempool so we won't need to check same mempool again
+    // let's remember the mempool so we won't need to check same mempool all over again
     await redis.set(cacheKey, JSON.stringify(mempool.transactionHashes), 'PX', 1 * 60 * 1000);
 
     const promises: Promise<void>[] = [];
@@ -73,7 +79,7 @@ export class BlockchainMempoolScanCommand extends DaemonCommand {
     await Promise.all(promises);
 
     const totalTime = Math.floor((performance.now() - startTime) / 1000);
-    logger.info({ walletType, totalTime }, `[${walletType}] Checked mempool in ${totalTime} second(s).`);
+    this.logger(walletType).info({ walletType, totalTime }, `Checked mempool.`);
   }
 
 }

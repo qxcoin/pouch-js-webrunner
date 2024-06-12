@@ -1,5 +1,5 @@
-import rfs from 'rotating-file-stream';
-import path from 'path';
+import * as rfs from 'rotating-file-stream';
+import path from 'node:path';
 
 interface Options extends Omit<rfs.Options, 'path'> {
   destination: string,

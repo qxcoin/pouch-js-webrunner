@@ -2,7 +2,7 @@
 set -e
 
 npm --version
-npm install --no-progress --no-audit --no-fund
+npm install --dev --no-progress --no-audit --no-fund
 
 npm run clear
 npm run build

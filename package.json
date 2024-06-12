@@ -23,7 +23,7 @@
     "pino-pretty": "^10.0.0",
     "pino-socket": "^7.3.0",
     "pouch": "github:qxcoin/pouch-js",
-    "rotating-file-stream": "^3.2.1",
+    "rotating-file-stream": "^3.2.3",
     "typeorm": "^0.3.20",
     "yup": "^1.4.0"
   },

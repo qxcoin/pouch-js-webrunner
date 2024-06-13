@@ -13,8 +13,8 @@
     "inlineSourceMap": true,
     "removeComments": true,
 
-    "module": "es2022",
-    "moduleResolution": "node",
+    "module": "Node16",
+    "moduleResolution": "Node16",
     "rootDir": "./app",
     "baseUrl": ".",
     "paths": {

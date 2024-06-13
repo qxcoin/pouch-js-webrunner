@@ -1,4 +1,4 @@
-import pino, { type TransportTargetOptions } from 'pino';
+import { pino, type TransportTargetOptions } from 'pino';
 import { resolve } from 'node:path';
 
 const logstashTransport = {

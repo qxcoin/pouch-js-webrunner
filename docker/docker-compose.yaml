@@ -2,6 +2,9 @@ name: pouch
 
 services:
   app:
+    depends_on:
+      database:
+        condition: service_healthy
     container_name: pouch_app
     build: ./app
     restart: unless-stopped
@@ -9,9 +12,9 @@ services:
       - ../:/opt/app
     environment:
       NODE_ENV: ${NODE_ENV}
-      WAIT_HOSTS: database:3306
-      WAIT_AFTER: 15
   nginx:
+    depends_on:
+      - app
     container_name: pouch_nginx
     image: nginx:1.23
     ports:
@@ -34,6 +37,12 @@ services:
       MYSQL_PASSWORD: ${DB_PASSWORD}
       MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD}
       MYSQL_DATABASE: ${DB_DATABASE}
+    healthcheck:
+      test: ["CMD-SHELL", "mariadb --user=${DB_USERNAME} --password=${DB_PASSWORD} ${DB_DATABASE}"]
+      interval: 1s
+      timeout: 5s
+      retries: 120
+      start_period: 10s
   redis:
     container_name: pouch_redis
     image: redis

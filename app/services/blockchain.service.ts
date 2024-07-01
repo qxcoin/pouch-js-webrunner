@@ -77,16 +77,15 @@ export class BlockchainService {
       // we just check if the block height exists this time (which means transaction is not from mempool)
       // then we just confirm the transaction, otherwise we do nothing
       const oldTx = await TransactionService.get(out.address.hash, walletTransaction.hash);
-      if (oldTx) {
-        if (blockHeight && !oldTx.blockHeight) {
-          await TransactionService.confirm(oldTx, blockHeight);
-          transactions.push(oldTx);
-        }
-      }
       // if the transaction doesn't exist, we add transaction to database
-      else {
+      if (null === oldTx) {
         const tx = await TransactionService.create(walletType, out.address.walletId, inputAddressHashes, out.address.hash, walletTransaction.hash, walletTransaction.data, walletsConfig[walletType].coin.code, out.value, blockHeight);
         transactions.push(tx);
+      }
+      // if the transaction exists and is not confirmed, we confirm it
+      else if (blockHeight && !oldTx.blockHeight) {
+        await TransactionService.confirm(oldTx, blockHeight);
+        transactions.push(oldTx);
       }
     }
     return transactions;

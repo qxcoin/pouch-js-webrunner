@@ -1,5 +1,5 @@
 import { Command } from "commander";
-import { CoinTransaction, TokenTransaction, WalletTypes } from "pouch";
+import { WalletTypes } from "pouch";
 import w from "@app/wallet.js";
 import logger from "@app/logger.js";
 import redis from "@app/redis.js";
@@ -62,22 +62,13 @@ export class BlockchainMempoolScanCommand extends DaemonCommand {
 
     const walletTransactions = await wallet.getTransactions(transactionHashes);
 
-    const checkTransaction = async (walletTransaction: CoinTransaction | TokenTransaction): Promise<void> => {
-      try {
-        const transactions = await BlockchainService.handleTransaction(walletType, walletTransaction);
-        await TransactionService.reportTransactions(transactions);
-      } catch {
-        // we don't want any error
-        // there may be some transactions not supported by us inside blockchain
-      }
-    };
-
     // let's remember the mempool so we won't need to check same mempool all over again
     await redis.set(cacheKey, JSON.stringify(mempool.transactionHashes), 'PX', 1 * 60 * 1000);
 
-    const promises: Promise<void>[] = [];
-    for (const walletTransaction of walletTransactions) promises.push(checkTransaction(walletTransaction));
-    await Promise.all(promises);
+    for (const walletTransaction of walletTransactions) {
+      const transactions = await BlockchainService.handleTransaction(walletType, walletTransaction);
+      await TransactionService.reportTransactions(transactions);
+    }
 
     const totalTime = Math.floor((performance.now() - startTime) / 1000);
     this.logger(walletType).info({ walletType, totalTime }, `Checked mempool.`);

@@ -47,7 +47,8 @@ export class BlockchainScanCommand extends DaemonCommand {
   }
 
   public async autoMode(walletType: WalletTypes) {
-    this.delay = walletsConfig[walletType].blockTime;
+    // if the actual block time is below 16 seconds, we increase it to 16 seconds for resource efficiency
+    this.delay = Math.max(walletsConfig[walletType].blockTime, 16 * 1000);
     await super.run(walletType);
   }
 

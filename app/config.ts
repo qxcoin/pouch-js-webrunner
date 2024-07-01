@@ -83,7 +83,7 @@ const tronNetwork: NetworkConfig = {
 const tronWallet: WalletConfig<'tron'> = {
   provider: process.env['TRONGRID_API_ENDPOINT']!,
   headers: { 'TRON-PRO-API-KEY': process.env['TRONGRID_API_KEY']! },
-  blockTime: 16 * 1000, // the actual block time is 3 seconds, we increase it to 16 seconds for resource efficiency
+  blockTime: 3 * 1000,
   ...tronNetwork,
 }
 
@@ -104,7 +104,7 @@ const ethereumNetwork: NetworkConfig = {
 
 const ethereumWallet: WalletConfig<'ethereum'> = {
   provider: process.env['ETHEREUM_PROVIDER']!,
-  blockTime: 16 * 1000, // the actual block time is 12 seconds, we increase it to 16 seconds for resource efficiency
+  blockTime: 12 * 1000,
   ...ethereumNetwork,
 }
 

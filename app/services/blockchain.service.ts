@@ -1,8 +1,8 @@
 import {
-  RawTransaction,
   CoinTransaction,
   TokenTransaction,
   WalletTypes,
+  SyncWalletListener,
 } from 'pouch';
 import { AddressService } from './address.service.js';
 import { TransactionService } from './transaction.service.js';
@@ -15,13 +15,28 @@ export class BlockchainService {
 
   public static async checkBlocks(walletType: WalletTypes, from: number, to: number): Promise<Transaction[]> {
     const wallet = w.create(walletType);
+    if (!w.isScanWallet(wallet)) throw new Error(`Wallet [${walletType}] is not a scan wallet.`);
     const blocks = await wallet.getBlocks(from, to);
-    const transactions = [];
+    const transactions: Transaction[] = [];
     for (const block of blocks) {
       for (const walletTransaction of block.transactions) {
         transactions.push(...await this.handleTransaction(walletType, walletTransaction, block.height));
       }
     }
+    return transactions;
+  }
+
+  public static async syncBlocks(walletType: WalletTypes, listener?: SyncWalletListener): Promise<Transaction[]> {
+    const wallet = w.create(walletType);
+    if (!w.isSyncWallet(wallet)) throw new Error(`Wallet [${walletType}] is not a sync wallet.`);
+    const transactions: Transaction[] = [];
+    await wallet.sync({
+      onProgress: listener?.onProgress,
+      onTransaction: async (walletTransaction, blockHeight) => {
+        transactions.push(...await this.handleTransaction(walletType, walletTransaction, blockHeight));
+        listener?.onTransaction(walletTransaction, blockHeight);
+      }
+    });
     return transactions;
   }
 
@@ -56,7 +71,7 @@ export class BlockchainService {
       const addressHash = await inp.address();
       inputAddressHashes.push(addressHash);
     }
-    const transactions = [];
+    const transactions: Transaction[] = [];
     for (const out of outputs) {
       // if we already have transaction in database, we don't need to insert it again
       // we just check if the block height exists this time (which means transaction is not from mempool)
@@ -125,14 +140,10 @@ export class BlockchainService {
     if (walletType !== fromAddr.walletType || walletId !== fromAddr.walletId) {
       throw new Error(`Address [${from}] is not part of current wallet.`);
     }
-    const currency = walletsConfig[walletType].coin;
-    const transactions = await TransactionService.satisfy(walletType, walletId, currency.code, from, amount);
     const wallet = w.create(walletType);
     const fromPouchAddr = await wallet.getAddress(fromAddr.index, fromAddr.accountIndex);
-    const spending = transactions.map((t) => new RawTransaction(t.hash, t.data));
-    const transaction = await wallet.createTransaction(fromPouchAddr, to, amount, spending);
+    const transaction = await wallet.createTransaction(fromPouchAddr, to, amount);
     await wallet.broadcastTransaction(transaction);
-    await TransactionService.spend(transactions);
     return transaction.hash;
   }
 
@@ -149,12 +160,10 @@ export class BlockchainService {
       throw new Error(`Token [${tokenCode}] is not supported in ${walletType} wallet.`);
     }
     const contractAddress = currency.contractAddress;
-    const transactions = await TransactionService.satisfy(walletType, walletId, tokenCode, from, amount);
     const wallet = w.create(walletType);
     const fromPouchAddr = await wallet.getAddress(fromAddr.index, fromAddr.accountIndex);
     const transaction = await wallet.createTokenTransaction(contractAddress, fromPouchAddr, to, amount);
     await wallet.broadcastTransaction(transaction);
-    await TransactionService.spend(transactions);
     return transaction.hash;
   }
 }

@@ -81,7 +81,7 @@ export class AddressService {
   public static async getBalance(walletType: WalletTypes, walletId: string, currency: string, addressHash: string): Promise<bigint> {
     // in order to get balance of an address we need to
     // find all unspent transactions of that address and summarize their value
-    const transactions = await TransactionService.find({ walletType, walletId, currency, to: addressHash, spent: false });
+    const transactions = await TransactionService.find({ walletType, walletId, currency, to: addressHash });
     let sum = 0n;
     for (const t of transactions) sum += BigInt(t.value);
     return sum;

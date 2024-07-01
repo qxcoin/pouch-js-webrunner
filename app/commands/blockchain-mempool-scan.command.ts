@@ -1,5 +1,5 @@
 import { Command } from "commander";
-import { WalletTypes } from "pouch";
+import { CoinTransaction, TokenTransaction, WalletTypes } from "pouch";
 import w from "@app/wallet.js";
 import logger from "@app/logger.js";
 import redis from "@app/redis.js";
@@ -10,7 +10,7 @@ import { TransactionService } from "@app/services/transaction.service.js";
 
 export class BlockchainMempoolScanCommand extends DaemonCommand {
 
-  public override delay: number = 16 * 1000;
+  public override delay: number = 4 * 1000;
 
   public build(): Command {
     const program = new Command();
@@ -30,6 +30,7 @@ export class BlockchainMempoolScanCommand extends DaemonCommand {
     const startTime = performance.now();
 
     const wallet = w.create(walletType);
+    if (!w.isScanWallet(wallet)) throw new Error(`Wallet [${walletType}] is not a scan wallet.`);
 
     const mempool = await wallet.getMempool();
     this.logger(walletType).debug('Mempool download done.');
@@ -59,15 +60,15 @@ export class BlockchainMempoolScanCommand extends DaemonCommand {
       this.logger(walletType).info({ nonCached: transactionHashes.length, total: mempool.transactionHashes.length }, 'Mempool has some transactions non-cached we will check them.');
     }
 
-    const checkTransaction = async (hash: string): Promise<void> => {
+    const walletTransactions = await wallet.getTransactions(transactionHashes);
+
+    const checkTransaction = async (walletTransaction: CoinTransaction | TokenTransaction): Promise<void> => {
       try {
-        const walletTransaction = await wallet.getTransaction(hash);
         const transactions = await BlockchainService.handleTransaction(walletType, walletTransaction);
         await TransactionService.reportTransactions(transactions);
       } catch {
         // we don't want any error
         // there may be some transactions not supported by us inside blockchain
-        // in case of any error, we should ignore it and proceed to other transactions
       }
     };
 
@@ -75,7 +76,7 @@ export class BlockchainMempoolScanCommand extends DaemonCommand {
     await redis.set(cacheKey, JSON.stringify(mempool.transactionHashes), 'PX', 1 * 60 * 1000);
 
     const promises: Promise<void>[] = [];
-    for (const hash of transactionHashes) promises.push(checkTransaction(hash));
+    for (const walletTransaction of walletTransactions) promises.push(checkTransaction(walletTransaction));
     await Promise.all(promises);
 
     const totalTime = Math.floor((performance.now() - startTime) / 1000);

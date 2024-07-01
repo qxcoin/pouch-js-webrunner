@@ -32,6 +32,7 @@ export class BlockchainScanCommand extends DaemonCommand {
     const startTime = performance.now();
 
     const wallet = w.create(walletType);
+    if (!w.isScanWallet(wallet)) throw new Error(`Wallet [${walletType}] is not a scan wallet.`);
 
     to ??= await wallet.getLastBlockHeight();
 
@@ -60,6 +61,7 @@ export class BlockchainScanCommand extends DaemonCommand {
     const startTime = performance.now();
 
     const wallet = w.create(walletType);
+    if (!w.isScanWallet(wallet)) throw new Error(`Wallet [${walletType}] is not a scan wallet.`);
 
     const currentHeight = await wallet.getLastBlockHeight();
     this.logger(walletType).info({ currentHeight }, 'Current blockchain height.');

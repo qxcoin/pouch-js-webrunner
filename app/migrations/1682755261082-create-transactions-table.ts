@@ -16,7 +16,6 @@ export class CreateTransactionsTable1682755261082 implements MigrationInterface 
         { name: 'value', type: 'bigint', unsigned: true },
         { name: 'currency', type: 'varchar' },
         { name: 'block_height', type: 'int', unsigned: true, isNullable: true },
-        { name: 'spent', type: 'boolean', default: false },
         { name: 'created_at', type: 'timestamp', default: 'CURRENT_TIMESTAMP()' },
       ],
       indices: [

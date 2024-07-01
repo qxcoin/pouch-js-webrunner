@@ -33,9 +33,6 @@ export class Transaction {
   @Column('int', { name: 'block_height', nullable: true })
   blockHeight?: number | null;
 
-  @Column('boolean')
-  spent: boolean = false;
-
   @Column('timestamp', { name: 'created_at' })
   createdAt: Date;
 }

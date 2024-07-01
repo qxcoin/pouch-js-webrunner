@@ -53,7 +53,13 @@ fastify.post<TransferSchemaType>(
   '/transfer',
   { schema: transferSchema },
   async (req, reply) => {
-    return await BlockchainService.transfer(req.body.walletType, req.body.currency, req.body.from, req.body.to, BigInt(req.body.amount));
+    return await BlockchainService.transfer(
+      req.body.walletType,
+      req.body.currency,
+      req.body.from,
+      req.body.to,
+      BigInt(req.body.amount),
+    );
   }
 );
 
@@ -66,7 +72,6 @@ fastify.get<TransactionRetrievalSchema>(
       walletId: req.query.walletId,
       currency: req.query.currency,
       to: req.query.addressHash,
-      spent: undefined === req.query.spent ? undefined : Boolean(Number(req.query.spent)),
     });
   }
 );

@@ -12,6 +12,7 @@ export class Address {
   @Column('varchar', { name: 'wallet_id' })
   walletId: string;
 
+  // Group ID helps us to only scan last address of each group for payments.
   @Column('varchar', { name: 'group_id' })
   groupId: string;
 

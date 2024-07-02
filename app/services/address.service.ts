@@ -2,7 +2,7 @@ import { WalletTypes } from 'pouch';
 import dataSource from '@app/data-source.js';
 import { Address } from '@entities/address.js';
 import w from "@app/wallet.js";
-import { TransactionService } from './transaction.service.js';
+import { wallets as walletsConfig } from '@app/config.js';
 
 export class AddressService {
 
@@ -15,15 +15,21 @@ export class AddressService {
     return address;
   }
 
+  public static async getByIndex(walletType: WalletTypes, walletId: string, index: number, accountIndex: number): Promise<Address | null> {
+    const repo = dataSource.getRepository(Address);
+    const address = await repo.findOneBy({ walletType, walletId, index, accountIndex });
+    return address;
+  }
+
   /**
    * Get last active address of provided wallet and group or create an address if no address exists.
    * NOTE: Active addresses are last address of each group.
    */
-  public static async getActive(walletType: WalletTypes, walletId: string, groupId: string, fresh: boolean = false): Promise<Address> {
+  public static async getActive(walletType: WalletTypes, walletId: string, groupId: string, accountIndex: number, fresh: boolean = false): Promise<Address> {
     const repo = dataSource.getRepository(Address);
-    const address = await repo.findOne({ where: { walletType, walletId, groupId }, order: { id: 'desc' } });
+    const address = await repo.findOne({ where: { walletType, walletId, groupId, accountIndex }, order: { id: 'desc' } });
     if (fresh || address === null) {
-      return await this.create(walletType, walletId, groupId, await this.nextIndex(walletType, walletId), 0);
+      return await this.create(walletType, walletId, groupId, await this.nextIndex(walletType, walletId, accountIndex), accountIndex);
     } else {
       return address;
     }
@@ -59,9 +65,9 @@ export class AddressService {
   /**
    * Get next index for address of provided wallet.
    */
-  public static async nextIndex(walletType: WalletTypes, walletId: string): Promise<number> {
+  public static async nextIndex(walletType: WalletTypes, walletId: string, accountIndex: number): Promise<number> {
     const repo = dataSource.getRepository(Address);
-    const address = await repo.findOne({ where: { walletType, walletId }, order: { id: 'desc' } });
+    const address = await repo.findOne({ where: { walletType, walletId, accountIndex }, order: { id: 'desc' } });
     return address ? (address.index + 1) : 0;
   }
 
@@ -78,13 +84,17 @@ export class AddressService {
     return address;
   }
 
-  public static async getBalance(walletType: WalletTypes, walletId: string, currency: string, addressHash: string): Promise<bigint> {
-    // in order to get balance of an address we need to
-    // find all unspent transactions of that address and summarize their value
-    const transactions = await TransactionService.find({ walletType, walletId, currency, to: addressHash });
-    let sum = 0n;
-    for (const t of transactions) sum += BigInt(t.value);
-    return sum;
+  public static async getBalance(walletType: WalletTypes, currency: string, addressHash: string): Promise<bigint> {
+    const wallet = w.create(walletType);
+    const conf = walletsConfig[walletType];
+    if (conf['coin'].code === currency) {
+      return await wallet.getAddressBalance(addressHash);
+    }
+    const token = conf['tokens'].find(c => c.code === currency);
+    if (token) {
+      return await wallet.getAddressTokenBalance(token.contractAddress, addressHash);
+    }
+    throw new Error(`Currency [${currency}] is not supported.`);
   }
 
 }

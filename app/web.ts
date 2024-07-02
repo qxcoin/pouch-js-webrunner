@@ -6,6 +6,10 @@ import {
   SchemaType as AddressRetrievalSchemaType,
 } from '@schemas/address-retrieval.schema.js';
 import {
+  schema as addressActiveRetrievalSchema,
+  SchemaType as AddressActiveRetrievalSchemaType,
+} from '@schemas/address-active-retrieval.schema.js';
+import {
   schema as addressBalanceRetrievalSchema,
   SchemaType as AddressBalanceRetrievalSchemaType,
 } from '@schemas/address-balance-retrieval.schema.js';
@@ -35,7 +39,17 @@ fastify.get<AddressRetrievalSchemaType>(
   '/address',
   { schema: addressRetrievalSchema },
   async (req, reply) => {
-    const address = await AddressService.getActive(req.query.walletType, req.query.walletId, req.query.groupId, Boolean(Number(req.query.fresh)));
+    const address = await AddressService.getByIndex(req.query.walletType, req.query.walletId, req.query.index, req.query.accountIndex);
+    if (null === address) return reply.status(404).send();
+    return reply.send(address.hash);
+  }
+);
+
+fastify.get<AddressActiveRetrievalSchemaType>(
+  '/address/active',
+  { schema: addressActiveRetrievalSchema },
+  async (req, reply) => {
+    const address = await AddressService.getActive(req.query.walletType, req.query.walletId, req.query.groupId, req.query.accountIndex, Boolean(Number(req.query.fresh)));
     return reply.send(address.hash);
   }
 );
@@ -44,7 +58,7 @@ fastify.get<AddressBalanceRetrievalSchemaType>(
   '/address/balance',
   { schema: addressBalanceRetrievalSchema },
   async (req, reply) => {
-    const balance = await AddressService.getBalance(req.query.walletType, req.query.walletId, req.query.currency, req.query.addressHash);
+    const balance = await AddressService.getBalance(req.query.walletType, req.query.currency, req.query.addressHash);
     return reply.send(balance.toString());
   }
 );
